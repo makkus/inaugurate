@@ -79,8 +79,8 @@ if [ "$PROFILE_NAME" == "frkl" ]; then
   RPM_DEPENDENCIES="epel-release wget git python-virtualenv openssl-devel stow gcc libffi-devel python-devel ope  nssl-devel"
   # pip requirements
   PIP_DEPENDENCIES="pyyaml frkl"
-  VENV_NAME="freckles"
-  CONDA_ENV_NAME="freckles"
+  VENV_NAME="inaugurate"
+  CONDA_ENV_NAME="inaugurate"
 elif [ "$PROFILE_NAME" == "freckles" ] || [ "$PROFILE_NAME" == "inaugurate" ]; then
   # conda
   CONDA_PYTHON_VERSION="2.7"
@@ -91,9 +91,9 @@ elif [ "$PROFILE_NAME" == "freckles" ] || [ "$PROFILE_NAME" == "inaugurate" ]; t
   # rpm
   RPM_DEPENDENCIES="epel-release wget git python-virtualenv openssl-devel gcc libffi-devel python-devel ope  nssl-devel"
   # pip requirements
-  PIP_DEPENDENCIES="freckles"
-  VENV_NAME="freckles"
-  CONDA_ENV_NAME="freckles"
+  PIP_DEPENDENCIES="freckles inaugurate"
+  VENV_NAME="inaugurate"
+  CONDA_ENV_NAME="inaugurate"
 fi
 
 # General variables
