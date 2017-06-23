@@ -4,7 +4,7 @@ packages:
         conda:
           - pip
           - cryptography
-          - pytcrypto
+          - pycrypto
           - git
         apt:
           - build-essential
@@ -23,4 +23,8 @@ packages:
           - python-devel
           - ope
           - nssl-devel
-
+  - freckles:
+      pkg_mgr: pip
+      executable: /home/vagrant/.inaugurate/opt/conda/bin/pip
+      pip:
+        - freckles

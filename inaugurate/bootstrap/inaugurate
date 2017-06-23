@@ -49,7 +49,11 @@ else
     INAUGURATE_USER="$SUDO_USER"
 fi
 
-PROFILE_NAME="$1"
+if [ ! -z "$1" ]; then
+    PROFILE_NAME="$1"
+else
+    PROFILE_NAME="inaugurate"
+fi
 
 # inaugurate vars
 # conda
@@ -75,7 +79,9 @@ if [ "$PROFILE_NAME" == "frkl" ]; then
   RPM_DEPENDENCIES="epel-release wget git python-virtualenv openssl-devel stow gcc libffi-devel python-devel ope  nssl-devel"
   # pip requirements
   PIP_DEPENDENCIES="pyyaml frkl"
-elif [ "$PROFILE_NAME" == "freckles" ]; then
+  VENV_NAME="freckles"
+  CONDA_ENV_NAME="freckles"
+elif [ "$PROFILE_NAME" == "freckles" ] || [ "$PROFILE_NAME" == "inaugurate" ]; then
   # conda
   CONDA_PYTHON_VERSION="2.7"
   CONDA_DEPENDENCIES="pip cryptography pycrypto git"
@@ -86,6 +92,8 @@ elif [ "$PROFILE_NAME" == "freckles" ]; then
   RPM_DEPENDENCIES="epel-release wget git python-virtualenv openssl-devel gcc libffi-devel python-devel ope  nssl-devel"
   # pip requirements
   PIP_DEPENDENCIES="freckles"
+  VENV_NAME="freckles"
+  CONDA_ENV_NAME="freckles"
 fi
 
 # General variables
@@ -102,7 +110,7 @@ TEMP_DIR="$BASE_DIR/tmp/"
 INAUGURATE_PATH="$BASE_DIR/bin"
 
 # python/virtualenv related variables
-VIRTUALENV_DIR="$INAUGURATE_OPT/venv_$PROFILE_NAME"
+VIRTUALENV_DIR="$INAUGURATE_OPT/virtualenvs/$VENV_NAME"
 VIRTUALENV_PATH="$VIRTUALENV_DIR/bin"
 
 # conda related variables
@@ -113,7 +121,7 @@ CONDA_DOWNLOAD_URL_MAC="https://repo.continuum.io/miniconda/Miniconda2-latest-Ma
 CONDA_BASE_DIR="$BASE_DIR/opt/conda"
 CONDA_PATH="$CONDA_BASE_DIR/bin"
 CONDA_ROOT_EXE="$CONDA_BASE_DIR/bin/conda"
-CONDA_INAUGURATE_ENV_PATH="$CONDA_BASE_DIR/envs/$PROFILE_NAME"
+CONDA_INAUGURATE_ENV_PATH="$CONDA_BASE_DIR/envs/$CONDA_ENV_NAME"
 CONDA_INAUGURATE_ENV_EXE="$CONDA_INAUGURATE_ENV_PATH/bin/conda"
 
 mkdir -p "$INSTALL_LOG_DIR"
@@ -181,7 +189,7 @@ pip install --upgrade setuptools wheel
 pip install --upgrade requests
 set -e
 EOF
-    } >> "$SCRIPT_LOG_FILE" 2>&1 || error_exit "Could not create '$PROFILE_NAME' virtual environment"
+    } >> "$SCRIPT_LOG_FILE" 2>&1 || error_exit "Could not create '$VENV_NAME' virtual environment"
 }
 
 #TODO: exception handling for this
@@ -195,7 +203,7 @@ source "$VIRTUALENV_DIR/bin/activate"
 pip install --upgrade "$1" --upgrade-strategy only-if-needed
 set -e
 EOF
-    } >> "$SCRIPT_LOG_FILE" 2>&1 || error_exit "Could not create '$PROFILE_NAME' virtual environment"
+    } >> "$SCRIPT_LOG_FILE" 2>&1 || error_exit "Could not create '$VENV_NAME' virtual environment"
 }
 
 
@@ -205,7 +213,7 @@ function install_inaugurate_deb {
     execute_log "apt-get update" "Could not update apt repository cache"
     output "  * installing dependencies:$DEB_DEPENDENCIES"
     execute_log "apt-get install -y $DEB_DEPENDENCIES" "Error installing dependencies via apt."
-    output "  * creating '$PROFILE_NAME' virtual environment"
+    output "  * creating '$VENV_NAME' virtual environment"
     create_virtualenv
     for pkgName in $PIP_DEPENDENCIES
     do
@@ -220,7 +228,7 @@ function install_inaugurate_rpm {
     output "  * installing dependencies: $RPM_DEPENDENCIES"
     execute_log "yum install -y epel-release" "Error installing dependencies via yum."
     execute_log "yum install -y $RPM_DEPENDENCIES" "Error installing dependencies via yum."
-    output "  * creating '$PROFILE_NAME' virtual environment"
+    output "  * creating '$VENV_NAME' virtual environment"
     create_virtualenv
     for pkgName in $PIP_DEPENDENCIES
     do
@@ -260,7 +268,7 @@ function install_inaugurate_mac_root {
         execute_log "pip install virtualenv" "Could not install virtualenv via pip"
     fi
 
-    output "  * creating '$PROFILE_NAME' virtual environment"
+    output "  * creating '$VENV_NAME' virtual environment"
     create_virtualenv
     for pkgName in $PIP_DEPENDENCIES
     do
@@ -339,48 +347,48 @@ function install_inaugurate_non_root_conda {
     fi
 
     if [ ! -e "$CONDA_INAUGURATE_ENV_EXE" ]; then
-        output "  * creating '$PROFILE_NAME' conda environment"
-        execute_log "conda create -y --name $PROFILE_NAME python=2" "Could not create conda environment."
+        output "  * creating '$CONDA_ENV_NAME' conda environment"
+        execute_log "conda create -y --name $CONDA_ENV_NAME python=2" "Could not create conda environment."
     else
-        output "  - '$PROFILE_NAME' conda environment already exists, not creating again"
+        output "  - '$CONDA_ENV_NAME' conda environment already exists, not creating again"
     fi
 
-    packages=`conda list --name "$PROFILE_NAME"`
+    packages=`conda list --name "$CONDA_ENV_NAME"`
 
     # check python in conda environment
      if echo "$packages" | grep -q "^python\s*$CONDA_PYTHON_VERSION"; then
-       output "  - python already installed in conda environment '$PROFILE_NAME'"
+       output "  - python already installed in conda environment '$CONDA_ENV_NAME'"
     else
-       output "  * installing python (version $CONDA_PYTHON_VERSION) into conda environment '$PROFILE_NAME'"
-       execute_log "conda install --name $PROFILE_NAME -y python=$CONDA_PYTHON_VERSION" "Could not install python in conda environment."
+       output "  * installing python (version $CONDA_PYTHON_VERSION) into conda environment '$CONDA_ENV_NAME'"
+       execute_log "conda install --name $CONDA_ENV_NAME -y python=$CONDA_PYTHON_VERSION" "Could not install python in conda environment."
     fi
 
     # check conda dependencies
     for pkgName in $CONDA_DEPENDENCIES
     do
         if echo $packages | grep -q "$pkgName"; then
-            output "  - package '$pkgName' already present in conda environment '$PROFILE_NAME'"
+            output "  - package '$pkgName' already present in conda environment '$CONDA_ENV_NAME'"
          else
-            output "  * installing $pkgName into conda environment '$PROFILE_NAME'"
-            execute_log "conda install --name $PROFILE_NAME -y $pkgName" "Could not install $pkgName in conda environment."
+            output "  * installing $pkgName into conda environment '$CONDA_ENV_NAME'"
+            execute_log "conda install --name $CONDA_ENV_NAME -y $pkgName" "Could not install $pkgName in conda environment."
          fi
     done
 
-    execute_log "source activate $PROFILE_NAME" "Could not activate '$PROFILE_NAME' conda environment"
+    execute_log "source activate $CONDA_ENV_NAME" "Could not activate '$CONDA_ENV_NAME' conda environment"
 
     for pkgName in $PIP_DEPENDENCIES
     do
         modules=`pydoc modules`
         if echo "$modules" | grep -q "$pkgName" ; then
-           output "  - python package '$pkgName' already installed in conda environment '$PROFILE_NAME'"
+           output "  - python package '$pkgName' already installed in conda environment '$CONDA_ENV_NAME'"
         else
-           output "  * installing python package '$pkgName' into conda environment '$PROFILE_NAME'"
+           output "  * installing python package '$pkgName' into conda environment '$CONDA_ENV_NAME'"
            execute_log "pip install -U $pkgName --upgrade-strategy only-if-needed" "Could not install $pkgName in conda environment"
         fi
 
     done
-    execute_log "source deactivate $PROFILE_NAME" "Could not deactivate '$PROFILE_NAME' conda environment"
-    link_required_executables "$CONDA_BASE_DIR/envs/$PROFILE_NAME/bin"
+    execute_log "source deactivate $CONDA_ENV_NAME" "Could not deactivate '$CONDA_ENV_NAME' conda environment"
+    link_required_executables "$CONDA_INAUGURATE_ENV_PATH/bin"
 }
 
 function install_conda_non_root {
@@ -404,7 +412,6 @@ function install_conda_non_root {
 }
 
 function add_inaugurate_path {
-
     if [ -e "$INAUGURATE_USER_HOME/.profile" ] && ! grep -q 'add inaugurate environment' "$INAUGURATE_USER_HOME/.profile"; then
        cat <<"EOF" >> "$INAUGURATE_USER_HOME/.profile"
 

@@ -2,6 +2,7 @@
 
 """Console script for inaugurate."""
 
+import os
 import pprint
 import sys
 
@@ -23,7 +24,7 @@ def cli(version, ingrate):
 
     try:
         inaugurate = Inaugurate(ingrate)
-        print(inaugurate.ingrate)
+        inaugurate.inaugurate.run(os.path.expanduser("~/.inaugurate/runs/"), force=True, ansible_verbose="", callback="nsbl_internal")
     except (InaugurateException) as e:
         click.echo(e, err=True)
         sys.exit(1)

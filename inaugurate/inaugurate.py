@@ -3,12 +3,39 @@
 """Main module."""
 
 import os
+import pprint
 import sys
 
 import click
 from six import string_types
 
 import yaml
+from nsbl.nsbl import Nsbl, NsblRunner
+
+
+def inaugurate(ingrate, role_repos=[], task_descs=[], target=None):
+
+    if not target:
+        target = os.path.expanduser("~/.nsbl/runs")
+
+        if not isinstance(ingrate, dict):
+            raise InaugurateException("Ingrate '{}' needs to be of type dict".format(ingrate))
+
+        packages = ingrate.get("packages", None)
+
+        #pprint.pprint(packages)
+        if not packages:
+            raise InaugurateException("No packages specified: {}".format(ingrate))
+
+        ingrate_vars = [
+            {"vars": {"packages": packages, "pkg_mgr": "conda"}, "tasks": ["install-conda", "install"]}
+        ]
+
+        nsbl_obj = Nsbl.create(ingrate_vars, role_repos, task_descs, wrap_into_localhost_env=True, pre_chain=[])
+        runner = NsblRunner(nsbl_obj)
+
+        return runner
+
 
 
 class InaugurateException(Exception):
@@ -61,3 +88,5 @@ class Inaugurate(object):
             self.ingrate = ingrate
         else:
             raise Exception("Ingrate type '{}' not supported: {}".format(type(ingrate), ingrate))
+
+        self.inaugurate = inaugurate(self.ingrate)

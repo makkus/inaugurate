@@ -30,7 +30,7 @@ test_requirements = [
 setup(
     name='inaugurate',
     version='0.1.0',
-    description="hit the ground running bootstrap ",
+    description="'hit-the-ground-running' bootstrap framework",
     long_description=readme + '\n\n' + history,
     author="Markus Binsteiner",
     author_email='makkus@posteo.de',
