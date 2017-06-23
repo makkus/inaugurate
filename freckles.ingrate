@@ -1,0 +1,26 @@
+packages:
+  - python-base:
+      pkgs:
+        conda:
+          - pip
+          - cryptography
+          - pytcrypto
+          - git
+        apt:
+          - build-essential
+          - git
+          - python-virtualenv
+          - libssl-dev
+          - libffi-dev
+        yum:
+          - epel-release
+          - wget
+          - git
+          - python-virtualenv
+          - openssl-devel
+          - gcc
+          - libffi-devel
+          - python-devel
+          - ope
+          - nssl-devel
+
