@@ -28,7 +28,8 @@ def inaugurate(ingrate, role_repos=[], task_descs=[], target=None):
             raise InaugurateException("No packages specified: {}".format(ingrate))
 
         ingrate_vars = [
-            {"vars": {"packages": packages, "pkg_mgr": "conda"}, "tasks": ["install-conda", "install"]}
+            {"vars": {"packages": packages, "pkg_mgr": conda}, "tasks": ["install-conda", "install"]},
+            {"vars": {"packages": packages, "pkg_mgr": pip}, "tasks": ["install"]}
         ]
 
         nsbl_obj = Nsbl.create(ingrate_vars, role_repos, task_descs, wrap_into_localhost_env=True, pre_chain=[])

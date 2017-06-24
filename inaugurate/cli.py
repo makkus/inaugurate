@@ -25,6 +25,7 @@ def cli(version, ingrate):
     try:
         inaugurate = Inaugurate(ingrate)
         inaugurate.inaugurate.run(os.path.expanduser("~/.inaugurate/runs/"), force=True, ansible_verbose="", callback="nsbl_internal")
+
     except (InaugurateException) as e:
         click.echo(e, err=True)
         sys.exit(1)

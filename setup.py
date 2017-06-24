@@ -13,7 +13,9 @@ with open('HISTORY.rst') as history_file:
 
 requirements = [
     'Click>=6.0',
-    'six==1.10.0'
+    'six==1.10.0',
+    'nsbl',
+    'freckles'
     # TODO: put package requirements here
 ]
 
