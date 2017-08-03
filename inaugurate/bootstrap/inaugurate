@@ -42,12 +42,24 @@ function error_exit
 
 # determine whether we run with sudo, or not
 if [ "$EUID" != 0 ]; then
-    using_sudo=false
+    root_permissions=false
     INAUGURATE_USER="$USER"
 else
-    using_sudo=true
-    INAUGURATE_USER="$SUDO_USER"
+    root_permissions=true
+    if [ -z "$SUDO_USER" ]; then
+          if [ ! -z "$USER" ]; then
+            INAUGURATE_USER="$USER"
+          else
+            INAUGURATE_USER="root"
+          fi
+    else
+        echo "YYY"
+        INAUGURATE_USER="$SUDO_USER"
+    fi
 fi
+
+# echo "ROOT_PERMISSIONS: $root_permissions"
+# echo "INAUGURATE_USER: $INAUGURATE_USER"
 
 if [ ! -z "$1" ]; then
     PROFILE_NAME=`basename "$1"`
@@ -88,7 +100,7 @@ else
   EXECUTABLE_NAME="$PROFILE_NAME"
   CONDA_PYTHON_VERSION="2.7"
   CONDA_DEPENDENCIES="pip cryptography pycrypto git"
-  CONDA_EXECUTABLES_TO_LINK="inaugurate nsbl nsbl-playbook ansible ansible-playbook ansible-galaxy freckles"
+  CONDA_EXECUTABLES_TO_LINK="inaugurate nsbl nsbl-tasks nsbl-playbook ansible ansible-playbook ansible-galaxy freckles git"
   # deb
   DEB_DEPENDENCIES="build-essential git python-dev python-virtualenv libssl-dev libffi-dev"
   # rpm
@@ -104,16 +116,17 @@ DEBUG=false
 
 INAUGURATE_USER_HOME="`eval echo ~$INAUGURATE_USER`"
 
-BASE_DIR="$INAUGURATE_USER_HOME/.inaugurate"
-INSTALL_LOG_DIR="$BASE_DIR/.install_logs"
+INAUGURATE_BASE_DIR="$INAUGURATE_USER_HOME/.inaugurate"
+BASE_DIR="$INAUGURATE_USER_HOME/.local"
+INSTALL_LOG_DIR="$INAUGURATE_BASE_DIR/.install_logs"
 SCRIPT_LOG_FILE="$INSTALL_LOG_DIR/install.log"
 INAUGURATE_OPT="$BASE_DIR/opt"
-TEMP_DIR="$BASE_DIR/tmp/"
+TEMP_DIR="$INAUGURATE_BASE_DIR/tmp/"
 
 INAUGURATE_PATH="$BASE_DIR/bin"
 
 # python/virtualenv related variables
-VIRTUALENV_DIR="$INAUGURATE_OPT/virtualenvs/$VENV_NAME"
+VIRTUALENV_DIR="$BASE_DIR/virtualenvs/$VENV_NAME"
 VIRTUALENV_PATH="$VIRTUALENV_DIR/bin"
 
 # conda related variables
@@ -329,6 +342,14 @@ function link_path {
     ln -s "$1/$2" "$INAUGURATE_PATH/$2"
 }
 
+function link_conda_executables {
+
+    for pkgName in conda activate deactivate
+    do
+        link_path "$INAUGURATE_CONDA_PATH" "$pkgName"
+    done
+}
+
 function link_required_executables {
 
     for pkgName in $CONDA_EXECUTABLES_TO_LINK
@@ -391,6 +412,7 @@ function install_inaugurate_non_root_conda {
 
     done
     execute_log "source deactivate $CONDA_ENV_NAME" "Could not deactivate '$CONDA_ENV_NAME' conda environment"
+    link_conda_executables
     link_required_executables "$CONDA_INAUGURATE_ENV_PATH/bin"
 }
 
@@ -419,7 +441,7 @@ function add_inaugurate_path {
        cat <<"EOF" >> "$INAUGURATE_USER_HOME/.profile"
 
 # add inaugurate environment
-INAUGURATE_PATH="$HOME/.inaugurate/bin"
+INAUGURATE_PATH="$HOME/.local/bin"
 if [ -d "$INAUGURATE_PATH" ]; then
     PATH="$PATH:$INAUGURATE_PATH"
 fi
@@ -445,13 +467,13 @@ if ! command_exists $EXECUTABLE_NAME; then
       output "'inaugurate' not found in path, bootstrapping..."
       mkdir -p "$TEMP_DIR"
       mkdir -p "$INAUGURATE_PATH"
-      if [ $using_sudo == true ]; then
+      if [ $root_permissions == true ]; then
           chown -R "$INAUGURATE_USER" "$BASE_DIR"
           chown -R "$INAUGURATE_USER" "$TEMP_DIR"
           chown -R "$INAUGURATE_USER" "$INAUGURATE_PATH"
       fi
       output ""
-      install_inaugurate "$using_sudo"
+      install_inaugurate "$root_permissions"
       output ""
       add_inaugurate_path
     fi
@@ -473,7 +495,7 @@ execute_log "echo Finished '$PROFILE_NAME' bootstrap: `date`" "Error"
 
 
 
-if [ $using_sudo == true ]; then
+if [ "$root_permissions" == true ] && [ "$INAUGURATE_USER" != "root" ]; then
     exec sudo -u "$INAUGURATE_USER" -i "PATH=$PATH:$INAUGURATE_PATH" "$EXECUTABLE_NAME" "$@"
 else
     PATH="$PATH:$INAUGURATE_PATH" "$EXECUTABLE_NAME" "$@"
