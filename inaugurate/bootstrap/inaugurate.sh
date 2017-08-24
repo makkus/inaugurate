@@ -53,7 +53,6 @@ else
             INAUGURATE_USER="root"
           fi
     else
-        echo "YYY"
         INAUGURATE_USER="$SUDO_USER"
     fi
 fi
@@ -75,7 +74,7 @@ INAUGURATE_CONDA_EXECUTABLES_TO_LINK="$PROFILE_NAME"
 # deb
 INAUGURATE_DEB_DEPENDENCIES="build-essential git python-dev python-virtualenv libssl-dev libffi-dev"
 # rpm
-INAUGURATE_RPM_DEPENDENCIES="epel-release wget git python-virtualenv openssl-devel stow gcc libffi-devel python-devel ope  nssl-devel"
+INAUGURATE_RPM_DEPENDENCIES="epel-release wget git python-virtualenv openssl-devel gcc libffi-devel python-devel ope  nssl-devel"
 # pip requirements
 INAUGURATE_PIP_DEPENDENCIES="inaugurate"
 
@@ -89,7 +88,7 @@ if [ "$PROFILE_NAME" == "frkl" ]; then
   # deb
   DEB_DEPENDENCIES="build-essential git python-dev python-virtualenv libssl-dev libffi-dev"
   # rpm
-  RPM_DEPENDENCIES="epel-release wget git python-virtualenv openssl-devel stow gcc libffi-devel python-devel ope  nssl-devel"
+  RPM_DEPENDENCIES="epel-release wget git python-virtualenv openssl-devel gcc libffi-devel python-devel"
   # pip requirements
   PIP_DEPENDENCIES="pyyaml frkl"
   VENV_NAME="inaugurate"
@@ -100,13 +99,14 @@ else
   EXECUTABLE_NAME="$PROFILE_NAME"
   CONDA_PYTHON_VERSION="2.7"
   CONDA_DEPENDENCIES="pip cryptography pycrypto git"
-  CONDA_EXECUTABLES_TO_LINK="inaugurate nsbl nsbl-tasks nsbl-playbook ansible ansible-playbook ansible-galaxy freckles git"
+  CONDA_EXECUTABLES_TO_LINK="freckles inaugurate nsbl nsbl-tasks nsbl-playbook ansible ansible-playbook ansible-galaxy frecklecute"
+  CONDA_EXTRA_EXECUTABLES="nsbl nsbl-tasks nsbl-playbook ansible ansible-playbook ansible-galaxy git"
   # deb
-  DEB_DEPENDENCIES="build-essential git python-dev python-virtualenv libssl-dev libffi-dev"
+  DEB_DEPENDENCIES="curl build-essential git python-dev python-virtualenv libssl-dev libffi-dev"
   # rpm
-  RPM_DEPENDENCIES="epel-release wget git python-virtualenv openssl-devel gcc libffi-devel python-devel ope  nssl-devel"
+  RPM_DEPENDENCIES="epel-release wget git python-virtualenv openssl-devel gcc libffi-devel python-devel"
   # pip requirements
-  PIP_DEPENDENCIES="freckles nsbl inaugurate"
+  PIP_DEPENDENCIES="freckles"
   VENV_NAME="inaugurate"
   CONDA_ENV_NAME="inaugurate"
 fi
@@ -120,13 +120,13 @@ INAUGURATE_BASE_DIR="$INAUGURATE_USER_HOME/.inaugurate"
 BASE_DIR="$INAUGURATE_USER_HOME/.local"
 INSTALL_LOG_DIR="$INAUGURATE_BASE_DIR/.install_logs"
 SCRIPT_LOG_FILE="$INSTALL_LOG_DIR/install.log"
-INAUGURATE_OPT="$BASE_DIR/opt"
+INAUGURATE_OPT="$BASE_DIR/inaugurate"
 TEMP_DIR="$INAUGURATE_BASE_DIR/tmp/"
 
 INAUGURATE_PATH="$BASE_DIR/bin"
 
 # python/virtualenv related variables
-VIRTUALENV_DIR="$BASE_DIR/virtualenvs/$VENV_NAME"
+VIRTUALENV_DIR="$INAUGURATE_OPT/virtualenvs/$VENV_NAME"
 VIRTUALENV_PATH="$VIRTUALENV_DIR/bin"
 
 # conda related variables
@@ -134,7 +134,7 @@ CONDA_DOWNLOAD_URL_LINUX="https://repo.continuum.io/miniconda/Miniconda2-latest-
 #CONDA_DOWNLOAD_URL_LINUX="https://mirrors.tuna.tsinghua.edu.cn/anaconda/miniconda/Miniconda2-latest-Linux-x86_64.sh"
 CONDA_DOWNLOAD_URL_MAC="https://repo.continuum.io/miniconda/Miniconda2-latest-MacOSX-x86_64.sh"
 #CONDA_DOWNLOAD_URL_MAC="https://mirrors.tuna.tsinghua.edu.cn/anaconda/miniconda/Miniconda2-latest-MacOSX-x86_64.sh"
-CONDA_BASE_DIR="$BASE_DIR/opt/conda"
+CONDA_BASE_DIR="$BASE_DIR/inaugurate/conda"
 INAUGURATE_CONDA_PATH="$CONDA_BASE_DIR/bin"
 CONDA_ROOT_EXE="$CONDA_BASE_DIR/bin/conda"
 CONDA_INAUGURATE_ENV_PATH="$CONDA_BASE_DIR/envs/$CONDA_ENV_NAME"
@@ -143,14 +143,14 @@ CONDA_INAUGURATE_ENV_EXE="$CONDA_INAUGURATE_ENV_PATH/bin/conda"
 mkdir -p "$INSTALL_LOG_DIR"
 touch "$SCRIPT_LOG_FILE"
 chmod 700 "$SCRIPT_LOG_FILE"
-chown "$INAUGURATE_USER" "$SCRIPT_LOG_FILE"
+chown -R "$INAUGURATE_USER" "$INAUGURATE_BASE_DIR"
 
 function log () {
     echo "    .. $@" >> "$SCRIPT_LOG_FILE"
 }
 
 function output() {
-    log $@
+    log "$@"
     if ! [ "${QUIET}" = true ]; then
       echo "$@"
     fi
@@ -183,7 +183,7 @@ function download {
 }
 
 function install_inaugurate {
-    if [ "$1" == true ]; then
+    if [ "$1" = true ]; then
         install_inaugurate_root
     else
         install_inaugurate_non_root_conda
@@ -197,7 +197,7 @@ function create_virtualenv {
 set +e
 mkdir -p "$INAUGURATE_OPT"
 if [ ! -e "$VIRTUALENV_DIR" ]; then
-  virtualenv "$VIRTUALENV_DIR"
+  virtualenv --system-site-packages "$VIRTUALENV_DIR"
 fi
 source "$VIRTUALENV_DIR/bin/activate"
 pip install --upgrade pip
@@ -211,7 +211,7 @@ EOF
 #TODO: exception handling for this
 #TODO: check whether package already installed? or overkill? -- yeah, probably
 function install_package_in_virtualenv {
-    output "  * installing '$1' into virtualenv"
+    output "  * installing '$1' into venv: $VIRTUALENV_DIR"
     {
         su "$INAUGURATE_USER" <<EOF
 set +e
@@ -226,7 +226,8 @@ EOF
 function install_inaugurate_deb {
     output "  * Debian-based system detected"
     output "  * updating apt cache"
-    execute_log "apt-get update" "Could not update apt repository cache"
+    # sometimes, on a new debian machine, the first (and even 2nd) 'apt-get update' fails...
+    execute_log "apt-get update || apt-get update" "Could not update apt repository cache"
     output "  * installing dependencies:$DEB_DEPENDENCIES"
     execute_log "apt-get install -y $DEB_DEPENDENCIES" "Error installing dependencies via apt."
     output "  * creating '$VENV_NAME' virtual environment"
@@ -235,7 +236,7 @@ function install_inaugurate_deb {
     do
         install_package_in_virtualenv $pkgName
     done
-    link_required_executables "$VIRTUALENV_PATH"
+    link_required_executables "$VIRTUALENV_PATH" "$CONDA_EXECUTABLES_TO_LINK"
     #export PATH="$PATH:$VIRTUALENV_PATH"
 }
 
@@ -250,23 +251,25 @@ function install_inaugurate_rpm {
     do
         install_package_in_virtualenv $pkgName
     done
-    link_required_executables "$VIRTUALENV_PATH"
+    link_required_executables "$VIRTUALENV_PATH" "$CONDA_EXECUTABLES_TO_LINK"
     #export PATH="$PATH:$VIRTUALENV_PATH"
 }
 
-function install_xcode {
-    g++ --version > /dev/null 2&>1
-    if [ ! $? == 0 ]; then
-        output "  * installing xcode"
-        touch /tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress;
+function install_commandlinetools {
+    g++ --version > /dev/null 2>&1
+    if [ ! $? -eq 0 ]; then
+        output "  * installing CommandLineTools"
+        output "    -> looking up package name and version... "
+        sudo -u "$INAUGURATE_USER" touch /tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress
         log "Finding command-line-tools name"
         PROD=$(softwareupdate -l |
                grep "\*.*Command Line" |
                head -n 1 | awk -F"*" '{print $2}' |
                sed -e 's/^ *//' |
                tr -d '\n')
-        log "Installing: $PROD"
-        execute_log "softwareupdate -i \"$PROD\" -v" "Could not install $PROD"
+        output "    -> installing: $PROD..."
+        execute_log "sudo -u \"$INAUGURATE_USER\" softwareupdate -i \"$PROD\" " "Could not install $PROD"
+        rm /tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress
     else
         output "  - 'xcode' already installed, skipping"
     fi
@@ -274,8 +277,8 @@ function install_xcode {
 }
 
 function install_inaugurate_mac_root {
-    output "  * MacOS X-based system detected."
-    install_xcode
+    output '  * MacOS X-based system detected.'
+    install_commandlinetools
     output "  * installing pip & virtualenv"
     if ! command_exists pip; then
         execute_log "easy_install pip" "Could not install pip"
@@ -290,7 +293,7 @@ function install_inaugurate_mac_root {
     do
         install_package_in_virtualenv $pkgName
     done
-    link_required_executables "$VIRTUALENV_PATH"
+    link_required_executables "$VIRTUALENV_PATH" "$CONDA_EXECUTABLES_TO_LINK"
     #export PATH="$PATH:$VIRTUALENV_PATH"
 }
 
@@ -338,7 +341,7 @@ function install_inaugurate_root {
 
 function link_path {
     rm -f "$INAUGURATE_PATH/$2"
-    output "  * linking $1/$2 to $INAUGURATE_PATH/$2"
+    log "  * linking $1/$2 to $INAUGURATE_PATH/$2"
     ln -s "$1/$2" "$INAUGURATE_PATH/$2"
 }
 
@@ -352,7 +355,7 @@ function link_conda_executables {
 
 function link_required_executables {
 
-    for pkgName in $CONDA_EXECUTABLES_TO_LINK
+    for pkgName in $2
     do
       link_path "$1" "$pkgName"
     done
@@ -413,7 +416,7 @@ function install_inaugurate_non_root_conda {
     done
     execute_log "source deactivate $CONDA_ENV_NAME" "Could not deactivate '$CONDA_ENV_NAME' conda environment"
     link_conda_executables
-    link_required_executables "$CONDA_INAUGURATE_ENV_PATH/bin"
+    link_required_executables "$CONDA_INAUGURATE_ENV_PATH/bin" "$CONDA_EXECUTABLES_TO_LINK"
 }
 
 function install_conda_non_root {
@@ -437,7 +440,7 @@ function install_conda_non_root {
 }
 
 function add_inaugurate_path {
-    if [ -e "$INAUGURATE_USER_HOME/.profile" ] && ! grep -q 'add inaugurate environment' "$INAUGURATE_USER_HOME/.profile"; then
+    if [ ! -e "$INAUGURATE_USER_HOME/.profile" ] || ! grep -q 'add inaugurate environment' "$INAUGURATE_USER_HOME/.profile"; then
        cat <<"EOF" >> "$INAUGURATE_USER_HOME/.profile"
 
 # add inaugurate environment
@@ -467,7 +470,7 @@ if ! command_exists $EXECUTABLE_NAME; then
       output "'inaugurate' not found in path, bootstrapping..."
       mkdir -p "$TEMP_DIR"
       mkdir -p "$INAUGURATE_PATH"
-      if [ $root_permissions == true ]; then
+      if [ $root_permissions = true ]; then
           chown -R "$INAUGURATE_USER" "$BASE_DIR"
           chown -R "$INAUGURATE_USER" "$TEMP_DIR"
           chown -R "$INAUGURATE_USER" "$INAUGURATE_PATH"
@@ -493,10 +496,11 @@ fi
 
 execute_log "echo Finished '$PROFILE_NAME' bootstrap: `date`" "Error"
 
+#echo "INAUGURATE_PATH: $INAUGURATE_PATH"
 
-
-if [ "$root_permissions" == true ] && [ "$INAUGURATE_USER" != "root" ]; then
-    exec sudo -u "$INAUGURATE_USER" -i "PATH=$PATH:$INAUGURATE_PATH" "$EXECUTABLE_NAME" "$@"
+if [ "$root_permissions" = true ] && [ "$INAUGURATE_USER" != "root" ]; then
+    #exec sudo -u "$INAUGURATE_USER" -i "PATH=$PATH:$INAUGURATE_PATH" "$EXECUTABLE_NAME" "$@"
+    exec sudo -u "$INAUGURATE_USER" "$INAUGURATE_PATH/$EXECUTABLE_NAME" "$@"
 else
     PATH="$PATH:$INAUGURATE_PATH" "$EXECUTABLE_NAME" "$@"
 fi
