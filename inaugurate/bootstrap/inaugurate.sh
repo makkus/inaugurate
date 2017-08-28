@@ -517,11 +517,15 @@ if [ -n "$CONDA_CHANNEL" ] && [ ! -e "$INAUGURATE_USER_HOME/.condarc" ]; then
 fi
 
 if [[ $CHINA = 'true' && ( "$root_permissions" = true || "$INAUGURATE_USER" == "root" ) ]]; then
-    output "setting apt sources to ftp.cn.debian.org mirror"
-    if [ ! -e /etc/apt/sources.list.bak.inaugurate ]; then
-        sudo cp /etc/apt/sources.list /etc/apt/sources.list.bak.inaugurate
+    # check if Debian
+    APT_GET_CMD=$(which apt-get 2> /dev/null)
+    if [[ ! -z $APT_GET_CMD ]]; then
+       output "setting apt sources to ftp.cn.debian.org mirror"
+       if [ ! -e /etc/apt/sources.list.bak.inaugurate ]; then
+            sudo cp /etc/apt/sources.list /etc/apt/sources.list.bak.inaugurate
+       fi
+       sudo sed -i 's/deb.debian.org/ftp.cn.debian.org/g' /etc/apt/sources.list
     fi
-    sudo sed -i 's/deb.debian.org/ftp.cn.debian.org/g' /etc/apt/sources.list
 fi
 
 # check if command is already in the path, if it is, assume everything is bootstrapped
@@ -537,7 +541,7 @@ if ! command_exists $EXECUTABLE_NAME; then
           chown -R "$INAUGURATE_USER" "$BASE_DIR"
           chown -R "$INAUGURATE_USER" "$TEMP_DIR"
           chown -R "$INAUGURATE_USER" "$LOCAL_BIN_PATH"
-          chown -R "INAUGURATE_USER" "$INAUGURATE_BIN_PATH"
+          chown -R "$INAUGURATE_USER" "$INAUGURATE_BIN_PATH"
       fi
       output ""
       install_inaugurate "$root_permissions"
