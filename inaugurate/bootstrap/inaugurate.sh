@@ -10,9 +10,20 @@
 if [ ! -z "$INAUGURATE_DEBUG" ]; then
     DEBUG=true
 fi
-
 if [ "$DEBUG" = true ]; then
     set -x
+fi
+
+# prepare pip, conda & apt channels if necessary
+# PIP_INDEX_URL=""
+# CONDA_CHANNEL=""
+
+#PIP_INDEX_URL=
+#CONDA_CHANNEL=
+CHINA=true
+if [ "$CHINA" = true ]; then
+  PIP_INDEX_URL="https://pypi.tuna.tsinghua.edu.cn/simple"
+  CONDA_CHANNEL="https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/free/"
 fi
 
 # # convert exitcodes to events
@@ -57,6 +68,7 @@ else
     fi
 fi
 
+
 # echo "ROOT_PERMISSIONS: $root_permissions"
 # echo "INAUGURATE_USER: $INAUGURATE_USER"
 
@@ -84,7 +96,7 @@ if [ "$PROFILE_NAME" == "frkl" ]; then
   EXECUTABLE_NAME="frkl"
   CONDA_PYTHON_VERSION="2.7"
   CONDA_DEPENDENCIES="pip git"
-  CONDA_EXECUTABLES_TO_LINK="$PROFILE_NAME"
+  EXECUTABLES_TO_LINK="$PROFILE_NAME"
   # deb
   DEB_DEPENDENCIES="build-essential git python-dev python-virtualenv libssl-dev libffi-dev"
   # rpm
@@ -99,8 +111,8 @@ else
   EXECUTABLE_NAME="$PROFILE_NAME"
   CONDA_PYTHON_VERSION="2.7"
   CONDA_DEPENDENCIES="pip cryptography pycrypto git"
-  CONDA_EXECUTABLES_TO_LINK="freckles inaugurate nsbl nsbl-tasks nsbl-playbook ansible ansible-playbook ansible-galaxy frecklecute"
-  CONDA_EXTRA_EXECUTABLES="nsbl nsbl-tasks nsbl-playbook ansible ansible-playbook ansible-galaxy git"
+  EXECUTABLES_TO_LINK="freckles frecklecute"
+  EXTRA_EXECUTABLES="nsbl nsbl-tasks nsbl-playbook ansible ansible-playbook ansible-galaxy git"
   # deb
   DEB_DEPENDENCIES="curl build-essential git python-dev python-virtualenv libssl-dev libffi-dev"
   # rpm
@@ -123,7 +135,8 @@ SCRIPT_LOG_FILE="$INSTALL_LOG_DIR/install.log"
 INAUGURATE_OPT="$BASE_DIR/inaugurate"
 TEMP_DIR="$INAUGURATE_BASE_DIR/tmp/"
 
-INAUGURATE_PATH="$BASE_DIR/bin"
+LOCAL_BIN_PATH="$BASE_DIR/bin"
+INAUGURATE_BIN_PATH="$INAUGURATE_OPT/bin"
 
 # python/virtualenv related variables
 VIRTUALENV_DIR="$INAUGURATE_OPT/virtualenvs/$VENV_NAME"
@@ -131,9 +144,7 @@ VIRTUALENV_PATH="$VIRTUALENV_DIR/bin"
 
 # conda related variables
 CONDA_DOWNLOAD_URL_LINUX="https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh"
-#CONDA_DOWNLOAD_URL_LINUX="https://mirrors.tuna.tsinghua.edu.cn/anaconda/miniconda/Miniconda2-latest-Linux-x86_64.sh"
 CONDA_DOWNLOAD_URL_MAC="https://repo.continuum.io/miniconda/Miniconda2-latest-MacOSX-x86_64.sh"
-#CONDA_DOWNLOAD_URL_MAC="https://mirrors.tuna.tsinghua.edu.cn/anaconda/miniconda/Miniconda2-latest-MacOSX-x86_64.sh"
 CONDA_BASE_DIR="$BASE_DIR/inaugurate/conda"
 INAUGURATE_CONDA_PATH="$CONDA_BASE_DIR/bin"
 CONDA_ROOT_EXE="$CONDA_BASE_DIR/bin/conda"
@@ -144,6 +155,7 @@ mkdir -p "$INSTALL_LOG_DIR"
 touch "$SCRIPT_LOG_FILE"
 chmod 700 "$SCRIPT_LOG_FILE"
 chown -R "$INAUGURATE_USER" "$INAUGURATE_BASE_DIR"
+
 
 function log () {
     echo "    .. $@" >> "$SCRIPT_LOG_FILE"
@@ -162,7 +174,7 @@ function error_output() {
 }
 
 function command_exists {
-    PATH="$PATH:$INAUGURATE_PATH" type "$1" > /dev/null 2>&1 ;
+    PATH="$PATH:$LOCAL_BIN_PATH:$INAUGURATE_BIN_PATH" type "$1" > /dev/null 2>&1 ;
 }
 
 function execute_log {
@@ -211,7 +223,7 @@ EOF
 #TODO: exception handling for this
 #TODO: check whether package already installed? or overkill? -- yeah, probably
 function install_package_in_virtualenv {
-    output "  * installing '$1' into venv: $VIRTUALENV_DIR"
+    output "    -> installing '$1' into venv: $VIRTUALENV_DIR"
     {
         su "$INAUGURATE_USER" <<EOF
 set +e
@@ -236,7 +248,8 @@ function install_inaugurate_deb {
     do
         install_package_in_virtualenv $pkgName
     done
-    link_required_executables "$VIRTUALENV_PATH" "$CONDA_EXECUTABLES_TO_LINK"
+    link_required_executables "$VIRTUALENV_PATH" "$EXECUTABLES_TO_LINK"
+    link_extra_executables "$VIRTUALENV_PATH" "$EXTRA_EXECUTABLES"
     #export PATH="$PATH:$VIRTUALENV_PATH"
 }
 
@@ -251,7 +264,8 @@ function install_inaugurate_rpm {
     do
         install_package_in_virtualenv $pkgName
     done
-    link_required_executables "$VIRTUALENV_PATH" "$CONDA_EXECUTABLES_TO_LINK"
+    link_required_executables "$VIRTUALENV_PATH" "$EXECUTABLES_TO_LINK"
+    link_extra_executables "$VIRTUALENV_PATH" "$EXTRA_EXECUTABLES"
     #export PATH="$PATH:$VIRTUALENV_PATH"
 }
 
@@ -271,7 +285,7 @@ function install_commandlinetools {
         execute_log "sudo -u \"$INAUGURATE_USER\" softwareupdate -i \"$PROD\" " "Could not install $PROD"
         rm /tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress
     else
-        output "  - 'xcode' already installed, skipping"
+        output "  - 'xcode' already present, skipping"
     fi
 
 }
@@ -293,7 +307,8 @@ function install_inaugurate_mac_root {
     do
         install_package_in_virtualenv $pkgName
     done
-    link_required_executables "$VIRTUALENV_PATH" "$CONDA_EXECUTABLES_TO_LINK"
+    link_required_executables "$VIRTUALENV_PATH" "$EXECUTABLES_TO_LINK"
+    link_extra_executables "$VIRTUALENV_PATH" "$EXTRA_EXECUTABLES"
     #export PATH="$PATH:$VIRTUALENV_PATH"
 }
 
@@ -340,16 +355,24 @@ function install_inaugurate_root {
 }
 
 function link_path {
-    rm -f "$INAUGURATE_PATH/$2"
-    log "  * linking $1/$2 to $INAUGURATE_PATH/$2"
-    ln -s "$1/$2" "$INAUGURATE_PATH/$2"
+    rm -f "$3/$2"
+    log "  * linking $1/$2 to $3/$2"
+    ln -s "$1/$2" "$3/$2"
+}
+
+function link_path_to_local_bin {
+    link_path "$1" "$2" "$LOCAL_BIN_PATH"
+}
+
+function link_path_to_inaugurate_bin {
+    link_path "$1" "$2" "$INAUGURATE_BIN_PATH"
 }
 
 function link_conda_executables {
 
     for pkgName in conda activate deactivate
     do
-        link_path "$INAUGURATE_CONDA_PATH" "$pkgName"
+        link_path_to_local_bin "$INAUGURATE_CONDA_PATH" "$pkgName"
     done
 }
 
@@ -357,7 +380,15 @@ function link_required_executables {
 
     for pkgName in $2
     do
-      link_path "$1" "$pkgName"
+        link_path_to_local_bin "$1" "$pkgName"
+    done
+}
+
+function link_extra_executables {
+
+    for pkgName in $2
+    do
+        link_path_to_inaugurate_bin "$1" "$pkgName"
     done
 }
 
@@ -369,7 +400,7 @@ function install_inaugurate_non_root_conda {
         output "  * installing conda"
         install_conda_non_root
     else
-        output "  - 'conda' already installed, not installing again"
+        output "  - 'conda' already present, not installing again"
         #export PATH="$INAUGURATE_CONDA_PATH:$PATH"
     fi
 
@@ -384,9 +415,9 @@ function install_inaugurate_non_root_conda {
 
     # check python in conda environment
      if echo "$packages" | grep -q "^python\s*$CONDA_PYTHON_VERSION"; then
-       output "  - python already installed in conda environment '$CONDA_ENV_NAME'"
-    else
-       output "  * installing python (version $CONDA_PYTHON_VERSION) into conda environment '$CONDA_ENV_NAME'"
+       output "    -> python already present in conda environment '$CONDA_ENV_NAME'"
+     else
+       output "    -> installing python (version $CONDA_PYTHON_VERSION) into conda environment '$CONDA_ENV_NAME'"
        execute_log "$CONDA_ROOT_EXE install --name $CONDA_ENV_NAME -y python=$CONDA_PYTHON_VERSION" "Could not install python in conda environment."
     fi
 
@@ -394,9 +425,9 @@ function install_inaugurate_non_root_conda {
     for pkgName in $CONDA_DEPENDENCIES
     do
         if echo $packages | grep -q "$pkgName"; then
-            output "  - package '$pkgName' already present in conda environment '$CONDA_ENV_NAME'"
+            output "    -> package '$pkgName' already present in conda environment '$CONDA_ENV_NAME'"
          else
-            output "  * installing $pkgName into conda environment '$CONDA_ENV_NAME'"
+            output "    -> installing $pkgName into conda environment '$CONDA_ENV_NAME'"
             execute_log "$CONDA_ROOT_EXE install --name $CONDA_ENV_NAME -y $pkgName" "Could not install $pkgName in conda environment."
          fi
     done
@@ -407,16 +438,17 @@ function install_inaugurate_non_root_conda {
     do
         modules=`$INAUGURATE_CONDA_PATH/pydoc modules`
         if echo "$modules" | grep -q "$pkgName" ; then
-           output "  - python package '$pkgName' already installed in conda environment '$CONDA_ENV_NAME'"
+           output "    -> python package '$pkgName' already present in conda environment '$CONDA_ENV_NAME'"
         else
-            output "  * installing python package '$pkgName' into conda environment '$CONDA_ENV_NAME'"
+            output "    -> installing python package '$pkgName' into conda environment '$CONDA_ENV_NAME'"
             execute_log "pip install -U $pkgName --upgrade-strategy only-if-needed" "Could not install $pkgName in conda environment"
         fi
 
     done
     execute_log "source deactivate $CONDA_ENV_NAME" "Could not deactivate '$CONDA_ENV_NAME' conda environment"
     link_conda_executables
-    link_required_executables "$CONDA_INAUGURATE_ENV_PATH/bin" "$CONDA_EXECUTABLES_TO_LINK"
+    link_required_executables "$CONDA_INAUGURATE_ENV_PATH/bin" "$EXECUTABLES_TO_LINK"
+    link_extra_executables "$CONDA_INAUGURATE_ENV_PATH/bin" "$EXTRA_EXECUTABLES"
 }
 
 function install_conda_non_root {
@@ -444,9 +476,9 @@ function add_inaugurate_path {
        cat <<"EOF" >> "$INAUGURATE_USER_HOME/.profile"
 
 # add inaugurate environment
-INAUGURATE_PATH="$HOME/.local/bin"
-if [ -d "$INAUGURATE_PATH" ]; then
-    PATH="$PATH:$INAUGURATE_PATH"
+LOCAL_BIN_PATH="$HOME/.local/bin"
+if [ -d "$LOCAL_BIN_PATH" ]; then
+    PATH="$PATH:$LOCAL_BIN_PATH"
 fi
 EOF
 
@@ -458,9 +490,39 @@ EOF
 
 ############# Start script ##################
 
-export PATH="$INAUGURATE_PATH:$PATH"
+export PATH="$LOCAL_BIN_PATH:$INAUGURATE_BIN_PATH:$PATH"
 
 execute_log "echo Starting inaugurate bootstrap: `date`" "Error"
+
+# prepare pip, conda and apt mirrors if necessary
+if [ $CHINA = 'true' ]; then
+    CONDA_DOWNLOAD_URL_LINUX="https://mirrors.tuna.tsinghua.edu.cn/anaconda/miniconda/Miniconda2-latest-Linux-x86_64.sh"
+    CONDA_DOWNLOAD_URL_MAC="https://mirrors.tuna.tsinghua.edu.cn/anaconda/miniconda/Miniconda2-latest-MacOSX-x86_64.sh"
+fi
+
+if [ -n "$PIP_INDEX_URL" ] && [ ! -e "$INAUGURATE_USER_HOME/.pip/pip.conf" ]; then
+    output ""
+    output "* setting pip index to: $PIP_INDEX_URL"
+    mkdir -p "$INAUGURATE_USER_HOME/.pip"
+    echo "[global]" > "$INAUGURATE_USER_HOME/.pip/pip.conf"
+    echo "index-url = $PIP_INDEX_URL" >> "$INAUGURATE_USER_HOME/.pip/pip.conf"
+fi
+
+if [ -n "$CONDA_CHANNEL" ] && [ ! -e "$INAUGURATE_USER_HOME/.condarc" ]; then
+    output ""
+    output "* setting conda channel to: $CONDA_CHANNEL"
+    echo "channels:" > "$INAUGURATE_USER_HOME/.condarc"
+    echo "  - $CONDA_CHANNEL" >> "$INAUGURATE_USER_HOME/.condarc"
+    echo "show_channel_urls: true" >> "$INAUGURATE_USER_HOME/.condarc"
+fi
+
+if [[ $CHINA = 'true' && ( "$root_permissions" = true || "$INAUGURATE_USER" == "root" ) ]]; then
+    output "setting apt sources to ftp.cn.debian.org mirror"
+    if [ ! -e /etc/apt/sources.list.bak.inaugurate ]; then
+        sudo cp /etc/apt/sources.list /etc/apt/sources.list.bak.inaugurate
+    fi
+    sudo sed -i 's/deb.debian.org/ftp.cn.debian.org/g' /etc/apt/sources.list
+fi
 
 # check if command is already in the path, if it is, assume everything is bootstrapped
 if ! command_exists $EXECUTABLE_NAME; then
@@ -469,11 +531,13 @@ if ! command_exists $EXECUTABLE_NAME; then
       output ""
       output "'inaugurate' not found in path, bootstrapping..."
       mkdir -p "$TEMP_DIR"
-      mkdir -p "$INAUGURATE_PATH"
+      mkdir -p "$LOCAL_BIN_PATH"
+      mkdir -p "$INAUGURATE_BIN_PATH"
       if [ $root_permissions = true ]; then
           chown -R "$INAUGURATE_USER" "$BASE_DIR"
           chown -R "$INAUGURATE_USER" "$TEMP_DIR"
-          chown -R "$INAUGURATE_USER" "$INAUGURATE_PATH"
+          chown -R "$INAUGURATE_USER" "$LOCAL_BIN_PATH"
+          chown -R "INAUGURATE_USER" "$INAUGURATE_BIN_PATH"
       fi
       output ""
       install_inaugurate "$root_permissions"
@@ -496,11 +560,11 @@ fi
 
 execute_log "echo Finished '$PROFILE_NAME' bootstrap: `date`" "Error"
 
-#echo "INAUGURATE_PATH: $INAUGURATE_PATH"
+#echo "INAUGURATE_PATH: $LOCAL_BIN_PATH"
 
 if [ "$root_permissions" = true ] && [ "$INAUGURATE_USER" != "root" ]; then
-    #exec sudo -u "$INAUGURATE_USER" -i "PATH=$PATH:$INAUGURATE_PATH" "$EXECUTABLE_NAME" "$@"
-    exec sudo -u "$INAUGURATE_USER" "$INAUGURATE_PATH/$EXECUTABLE_NAME" "$@"
+    #exec sudo -u "$INAUGURATE_USER" -i "PATH=$PATH:$LOCAL_BIN_PATH:$INAUGURATE_BIN_PATH" "$EXECUTABLE_NAME" "$@"
+    exec sudo -u "$INAUGURATE_USER" "$LOCAL_BIN_PATH/$EXECUTABLE_NAME" "$@"
 else
-    PATH="$PATH:$INAUGURATE_PATH" "$EXECUTABLE_NAME" "$@"
+    PATH="$PATH:$LOCAL_BIN_PATH:$INAUGURATE_BIN_PATH" "$EXECUTABLE_NAME" "$@"
 fi
