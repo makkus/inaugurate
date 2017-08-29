@@ -190,14 +190,24 @@ config_read() {
 
 config_get() {
 
-    url="https://raw.githubusercontent.com/inaugurate/store/master/$1"
 
-    output "  * reading: $url"
+    INAUGURATE_LOCAL_STORE="$INAUGURATE_BASE_DIR/local-store"
 
-    CONFIG="$(read_remote $url)"
+    local_app="$INAUGURATE_LOCAL_STORE/$1"
 
-    log "Read remote config:"
-    log "$CONFIG"
+    if [ -e "$local_app" ]; then
+      CONFIG=$(cat $local_app)
+
+      log "Read local config:"
+      log "$CONFIG"
+    else
+      url="https://raw.githubusercontent.com/inaugurate/store/master/$1"
+      output "  * reading: $url"
+      CONFIG="$(read_remote $url)"
+
+      log "Read remote config:"
+      log "$CONFIG"
+    fi
 
     #TODO: user confirmation after display?
 
@@ -638,6 +648,7 @@ if ! command_exists_only_user_visible $EXECUTABLE_NAME; then
         chown -R "$INAUGURATE_USER" "$TEMP_DIR"
         chown -R "$INAUGURATE_USER" "$LOCAL_BIN_PATH"
         chown -R "$INAUGURATE_USER" "$INAUGURATE_BIN_PATH"
+        chown -R "$INAUGURATE_USER" "$INAUGURATE_OPT"
     fi
 
     install_inaugurate "$root_permissions"
