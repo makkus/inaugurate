@@ -25,6 +25,7 @@
 # settings to control inaugurates behaviour (default is false or 'not set' for all those)
 # ---------------------------------------------------------------------------------------
 #
+# NO_ADD_PATH=true      # if set to true, ~/.local/bin won't be added to .profile
 # NO_EXEC=true          # if set to true, the 'inaugurated' application won't be run
 #
 # SELF_DESTRUCT=true    # if set to true, after the 'inaugurated' application is run, the folder(s)
@@ -68,7 +69,43 @@ fi
 
 trap 'error_exit "Bootstrapping interrupted, exiting...; exit"' SIGHUP SIGINT SIGTERM
 
+# determine whether we run with sudo, or not
+if [ "$EUID" != 0 ]; then
+    root_permissions=false
+    INAUGURATE_USER="$USER"
+else
+    root_permissions=true
+    if [ -z "$SUDO_USER" ]; then
+        if [ ! -z "$USER" ]; then
+            INAUGURATE_USER="$USER"
+        else
+            INAUGURATE_USER="root"
+        fi
+    else
+        INAUGURATE_USER="$SUDO_USER"
+    fi
+fi
+
+# General variables
 PROGNAME="inaugurate"
+
+INAUGURATE_USER_HOME="`eval echo ~$INAUGURATE_USER`"
+INAUGURATE_BASE_DIR="$INAUGURATE_USER_HOME/.inaugurate"
+BASE_DIR="$INAUGURATE_USER_HOME/.local"
+
+
+INAUGURATE_OPT="$BASE_DIR/inaugurate"
+INSTALL_LOG_DIR="$INAUGURATE_OPT/logs/"
+
+TEMP_DIR="$INAUGURATE_OPT/tmp/"
+
+SCRIPT_LOG_FILE="$INSTALL_LOG_DIR/install_$(date -d "today" +"%Y%m%d%H%M%S").log"
+mkdir -p "$INSTALL_LOG_DIR"
+touch "$SCRIPT_LOG_FILE"
+chmod 700 "$SCRIPT_LOG_FILE"
+
+LOCAL_BIN_PATH="$BASE_DIR/bin"
+INAUGURATE_BIN_PATH="$INAUGURATE_OPT/bin"
 function error_exit
 {
 
@@ -83,23 +120,6 @@ function error_exit
 	  exit 1
 }
 
-# determine whether we run with sudo, or not
-if [ "$EUID" != 0 ]; then
-    root_permissions=false
-    INAUGURATE_USER="$USER"
-else
-    root_permissions=true
-    if [ -z "$SUDO_USER" ]; then
-          if [ ! -z "$USER" ]; then
-            INAUGURATE_USER="$USER"
-          else
-            INAUGURATE_USER="root"
-          fi
-    else
-        INAUGURATE_USER="$SUDO_USER"
-    fi
-fi
-
 # echo "ROOT_PERMISSIONS: $root_permissions"
 # echo "INAUGURATE_USER: $INAUGURATE_USER"
 
@@ -108,6 +128,93 @@ if [ ! -z "$1" ]; then
 else
     PROFILE_NAME="inaugurate"
 fi
+
+# functions to read (remote) config
+function log () {
+    echo "    .. $@" >> "$SCRIPT_LOG_FILE"
+}
+
+function output() {
+    log "$@"
+    if ! [ "${QUIET}" = true ]; then
+        echo "$@"
+    fi
+}
+
+function error_output() {
+    log $1
+    (>&2 echo "$@")
+}
+
+function command_exists {
+    PATH="$PATH:$LOCAL_BIN_PATH:$INAUGURATE_BIN_PATH" type "$1" > /dev/null 2>&1 ;
+}
+
+function command_exists_only_user_visible {
+    PATH="$PATH:$LOCAL_BIN_PATH" type "$1" > /dev/null 2>&1 ;
+}
+
+function execute_log {
+    eval "$1" >> "$SCRIPT_LOG_FILE" 2>&1 || error_exit "$2"
+}
+
+function download {
+    {
+        if command_exists wget; then
+            execute_log "wget -O $2 $1" "Could not download $1 using wget"
+        elif command_exists curl; then
+            execute_log "curl -o $2 $1" "Could not download $1 using curl"
+        else
+            error_output "Could not find 'wget' nor 'curl' to download files. Exiting..."
+            exit 1
+        fi
+    } >> "$SCRIPT_LOG_FILE"
+}
+
+read_remote() {
+
+    if command_exists wget; then
+        wget -qO- "$1"
+    elif command_exists curl; then
+        curl -s "$1"
+    else
+        error_output "Could not find 'wget' nor 'curl' to download files. Exiting..."
+        exit 1
+    fi
+
+}
+
+config_read() {
+    (echo "$1" | grep -E "^${2}=" -m 1 2>/dev/null || echo "VAR=__UNDEFINED__") | head -n 1 | cut -d '=' -f 2-;
+}
+
+config_get() {
+
+    url="https://raw.githubusercontent.com/inaugurate/store/master/$1"
+
+    output "  * reading: $url"
+
+    CONFIG="$(read_remote $url)"
+
+    log "Read remote config:"
+    log "$CONFIG"
+
+    #TODO: user confirmation after display?
+
+    CONDA_PYTHON_VERSION="$(config_read "${CONFIG}" "CONDA_PYTHON_VERSION")";
+    CONDA_DEPENDENCIES="$(config_read "${CONFIG}" "CONDA_DEPENDENCIES")";
+    EXECUTABLES_TO_LINK="$(config_read "${CONFIG}" "EXECUTABLES_TO_LINK")";
+    EXTRA_EXECUTABLES="$(config_read "${CONFIG}" "EXTRA_EXECUTABLES")";
+    DEB_DEPENDENCIES="$(config_read "${CONFIG}" "DEB_DEPENDENCIES")";
+    RPM_DEPENDENCIES="$(config_read "${CONFIG}" "RPM_DEPENDENCIES")";
+    PIP_DEPENDENCIES="$(config_read "${CONFIG}" "PIP_DEPENDENCIES")";
+    ENV_NAME="$(config_read "${CONFIG}" "PIP_DEPENDENCIES")";
+    if [ "${ENV_NAME}" = "__UNDEFINED__" ]; then
+        ENV_NAME="$EXECUTABLE_NAME"
+    fi
+
+}
+
 
 # inaugurate vars
 # conda
@@ -121,39 +228,6 @@ INAUGURATE_RPM_DEPENDENCIES="epel-release wget git python-virtualenv openssl-dev
 # pip requirements
 INAUGURATE_PIP_DEPENDENCIES="inaugurate"
 
-# profile dependent
-EXECUTABLE_NAME="$PROFILE_NAME"
-if [[ "$PROFILE_NAME" == "freckles" || "$PROFILE_NAME" == "frecklecute" ]]; then
-  # conda
-  CONDA_PYTHON_VERSION="2.7"
-  CONDA_DEPENDENCIES="pip cryptography pycrypto git"
-  EXECUTABLES_TO_LINK="freckles frecklecute"
-  EXTRA_EXECUTABLES="nsbl nsbl-tasks nsbl-playbook ansible ansible-playbook ansible-galaxy git"
-  # deb
-  DEB_DEPENDENCIES="curl build-essential git python-dev python-virtualenv libssl-dev libffi-dev"
-  # rpm
-  RPM_DEPENDENCIES="epel-release wget git python-virtualenv openssl-devel gcc libffi-devel python-devel"
-  # pip requirements
-  PIP_DEPENDENCIES="freckles"
-  VENV_NAME="inaugurate"
-  CONDA_ENV_NAME="inaugurate"
-fi
-
-# General variables
-DEBUG=false
-
-INAUGURATE_USER_HOME="`eval echo ~$INAUGURATE_USER`"
-
-INAUGURATE_BASE_DIR="$INAUGURATE_USER_HOME/.inaugurate"
-BASE_DIR="$INAUGURATE_USER_HOME/.local"
-INSTALL_LOG_DIR="$INAUGURATE_BASE_DIR/.install_logs"
-SCRIPT_LOG_FILE="$INSTALL_LOG_DIR/install.log"
-INAUGURATE_OPT="$BASE_DIR/inaugurate"
-TEMP_DIR="$INAUGURATE_BASE_DIR/tmp/"
-
-LOCAL_BIN_PATH="$BASE_DIR/bin"
-INAUGURATE_BIN_PATH="$INAUGURATE_OPT/bin"
-
 # python/virtualenv related variables
 VIRTUALENV_DIR="$INAUGURATE_OPT/virtualenvs/$VENV_NAME"
 VIRTUALENV_PATH="$VIRTUALENV_DIR/bin"
@@ -164,51 +238,6 @@ CONDA_DOWNLOAD_URL_MAC="https://repo.continuum.io/miniconda/Miniconda2-latest-Ma
 CONDA_BASE_DIR="$BASE_DIR/inaugurate/conda"
 INAUGURATE_CONDA_PATH="$CONDA_BASE_DIR/bin"
 CONDA_ROOT_EXE="$CONDA_BASE_DIR/bin/conda"
-CONDA_INAUGURATE_ENV_PATH="$CONDA_BASE_DIR/envs/$CONDA_ENV_NAME"
-CONDA_INAUGURATE_ENV_EXE="$CONDA_INAUGURATE_ENV_PATH/bin/conda"
-
-mkdir -p "$INSTALL_LOG_DIR"
-touch "$SCRIPT_LOG_FILE"
-chmod 700 "$SCRIPT_LOG_FILE"
-chown -R "$INAUGURATE_USER" "$INAUGURATE_BASE_DIR"
-
-
-function log () {
-    echo "    .. $@" >> "$SCRIPT_LOG_FILE"
-}
-
-function output() {
-    log "$@"
-    if ! [ "${QUIET}" = true ]; then
-      echo "$@"
-    fi
-}
-
-function error_output() {
-    log $1
-    (>&2 echo "$@")
-}
-
-function command_exists {
-    PATH="$PATH:$LOCAL_BIN_PATH:$INAUGURATE_BIN_PATH" type "$1" > /dev/null 2>&1 ;
-}
-
-function execute_log {
-    eval "$1" >> "$SCRIPT_LOG_FILE" 2>&1 || error_exit "$2"
-}
-
-function download {
-    {
-    if command_exists wget; then
-        execute_log "wget -O $2 $1" "Could not download $1 using wget"
-    elif command_exists curl; then
-        execute_log "curl -o $2 $1" "Could not download $1 using curl"
-    else
-        error_output "Could not find 'wget' nor 'curl' to download files. Exiting..."
-        exit 1
-    fi
-    } >> "$SCRIPT_LOG_FILE"
-}
 
 function install_inaugurate {
     if [ "$1" = true ]; then
@@ -256,7 +285,7 @@ function install_inaugurate_deb {
     output "  * updating apt cache"
     # sometimes, on a new debian machine, the first (and even 2nd) 'apt-get update' fails...
     execute_log "apt-get update || apt-get update" "Could not update apt repository cache"
-    output "  * installing dependencies:$DEB_DEPENDENCIES"
+    output "  * installing dependencies: $DEB_DEPENDENCIES"
     execute_log "apt-get install -y $DEB_DEPENDENCIES" "Error installing dependencies via apt."
     output "  * creating '$VENV_NAME' virtual environment"
     create_virtualenv
@@ -495,6 +524,10 @@ function install_conda_non_root {
     fi
     } >> "$SCRIPT_LOG_FILE" 2>&1
     mkdir -p "$INAUGURATE_OPT"
+    mkdir -p "$INAUGURATE_BASE_DIR"
+
+    chown -R "$INAUGURATE_USER" "$INAUGURATE_BASE_DIR"
+
     output "  * installing conda"
     {
     bash "$TEMP_DIR/miniconda.sh" -b -p "$CONDA_BASE_DIR"
@@ -505,7 +538,7 @@ function install_conda_non_root {
 }
 
 function add_inaugurate_path {
-    if [ ! -e "$INAUGURATE_USER_HOME/.profile" ] || ! grep -q 'add inaugurate environment' "$INAUGURATE_USER_HOME/.profile"; then
+    if ! grep -q 'add inaugurate environment' "$INAUGURATE_USER_HOME/.profile" ; then
        cat <<"EOF" >> "$INAUGURATE_USER_HOME/.profile"
 
 # add inaugurate environment
@@ -523,7 +556,8 @@ EOF
 
 ############# Start script ##################
 
-export PATH="$LOCAL_BIN_PATH:$INAUGURATE_BIN_PATH:$PATH"
+#export PATH="$LOCAL_BIN_PATH:$INAUGURATE_BIN_PATH:$PATH"
+export PATH="$LOCAL_BIN_PATH:$PATH"
 
 execute_log "echo Starting inaugurate bootstrap: `date`" "Error"
 
@@ -553,6 +587,7 @@ if [[ "$CHINA" = true && ( "$root_permissions" = true || "$INAUGURATE_USER" == "
     # check if Debian
     APT_GET_CMD=$(which apt-get 2> /dev/null)
     if [[ ! -z $APT_GET_CMD ]]; then
+       output ""
        output "setting apt sources to ftp.cn.debian.org mirror"
        if [ ! -e /etc/apt/sources.list.bak.inaugurate ]; then
             sudo cp /etc/apt/sources.list /etc/apt/sources.list.bak.inaugurate
@@ -562,7 +597,38 @@ if [[ "$CHINA" = true && ( "$root_permissions" = true || "$INAUGURATE_USER" == "
 fi
 
 # check if command is already in the path, if it is, assume everything is bootstrapped
-if ! command_exists $EXECUTABLE_NAME; then
+EXECUTABLE_NAME="$PROFILE_NAME"
+
+if ! command_exists_only_user_visible $EXECUTABLE_NAME; then
+
+    output ""
+    output "'$EXECUTABLE_NAME' not found in path, inaugurating..."
+    output ""
+
+    # profile dependent
+    VENV_NAME="$PROFILE_NAME"
+    CONDA_ENV_NAME="$PROFILE_NAME"
+
+    if [[ "$PROFILE_NAME" == "freckles" || "$PROFILE_NAME" == "frecklecute" ]]; then
+        # conda
+        CONDA_PYTHON_VERSION="2.7"
+        CONDA_DEPENDENCIES="pip cryptography pycrypto git"
+        EXECUTABLES_TO_LINK="freckles frecklecute"
+        EXTRA_EXECUTABLES="nsbl nsbl-tasks nsbl-playbook ansible ansible-playbook ansible-galaxy git"
+        # deb
+        DEB_DEPENDENCIES="curl build-essential git python-dev python-virtualenv libssl-dev libffi-dev"
+        # rpm
+        RPM_DEPENDENCIES="epel-release wget git python-virtualenv openssl-devel gcc libffi-devel python-devel"
+        # pip requirements
+        PIP_DEPENDENCIES="freckles"
+        ENV_NAME="inaugurate"
+    else
+        config_get "$PROFILE_NAME"
+    fi
+    CONDA_ENV_NAME="$ENV_NAME"
+    VENV_NAME="$ENV_NAME"
+    CONDA_INAUGURATE_ENV_PATH="$CONDA_BASE_DIR/envs/$CONDA_ENV_NAME"
+    CONDA_INAUGURATE_ENV_EXE="$CONDA_INAUGURATE_ENV_PATH/bin/conda"
 
     mkdir -p "$TEMP_DIR"
     mkdir -p "$LOCAL_BIN_PATH"
@@ -573,17 +639,16 @@ if ! command_exists $EXECUTABLE_NAME; then
         chown -R "$INAUGURATE_USER" "$LOCAL_BIN_PATH"
         chown -R "$INAUGURATE_USER" "$INAUGURATE_BIN_PATH"
     fi
-    output ""
+
     install_inaugurate "$root_permissions"
     output ""
-    if [ ! $SELF_DESTRUCT = true ]; then
+
+    if [[ ! "$SELF_DESTRUCT" = true && ! "$NO_ADD_PATH" = true ]]; then
         add_inaugurate_path
     fi
 
-    if ! command_exists $EXECUTABLE_NAME; then
-        output "'$EXECUTABLE_NAME' not found in path, inaugurating..."
-        inaugurate "$1"
-    fi
+    #inaugurate "$1"
+
     shift
     output ""
     if [ "$NO_EXEC" = true ]; then
