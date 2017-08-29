@@ -1,0 +1,13 @@
+  EXECUTABLE_NAME="cookiecutter"
+  CONDA_PYTHON_VERSION="2.7"
+  CONDA_DEPENDENCIES="git"
+  EXECUTABLES_TO_LINK="cookiecutter"
+  EXTRA_EXECUTABLES="git"
+  # deb
+  DEB_DEPENDENCIES="curl build-essential git python-dev python-virtualenv libssl-dev libffi-dev"
+  # rpm
+  RPM_DEPENDENCIES="epel-release wget git python-virtualenv openssl-devel gcc libffi-devel python-devel"
+  # pip requirements
+  PIP_DEPENDENCIES="cookiecutter"
+  VENV_NAME="cookiecutter"
+  CONDA_ENV_NAME="cookiecutter"
