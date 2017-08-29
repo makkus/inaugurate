@@ -1,11 +1,57 @@
 #!/usr/bin/env bash
+#
+#
+#      _                                         _
+#     (_)                                       | |
+#      _ _ __   __ _ _   _  __ _ _   _ _ __ __ _| |_ ___
+#     | | '_ \ / _` | | | |/ _` | | | | '__/ _` | __/ _ \
+#     | | | | | (_| | |_| | (_| | |_| | | | (_| | ||  __/
+#     |_|_| |_|\__,_|\__,_|\__, |\__,_|_|  \__,_|\__\___|
+#                           __/ |
+#                          |___/
+#
+#                     Copyright 2017 by Markus Binsteiner
+#                                    licensed under GPLv3
+#
+#
+#
+# for more information
+# please visit: https://inaugurate.io
+#
+# ============
+# script start
+# ============
+#
+# settings to control inaugurates behaviour (default is false or 'not set' for all those)
+# ---------------------------------------------------------------------------------------
+#
+# NO_EXEC=true          # if set to true, the 'inaugurated' application won't be run
+#
+# SELF_DESTRUCT=true    # if set to true, after the 'inaugurated' application is run, the folder(s)
+#                       # used in the installation process are deleted again. the system packages
+#                       # used in that process (if using elevated permissions) as well as everything
+#                       # installed in the run will still be present
+#
+# PIP_INDEX_URL=""      # if $PIP_INDEX_URL is set, a $HOME/.pip/pip.conf file is created
+#                       # and the provided index_url is set (only if the file doesn't exists yet)
+#
+# CONDA_CHANNEL=""      # if $CONDA_CHANNEL is set, a $HOME/.condarc file is created and the
+#                       # provided channel is set (only if the file doesn't exist yet)
+#
+# CHINA=true            # this is a convenience setting, if $CHINA is set to true, inaugurate sets
+#                       # both pip and conda to point to mirrors within China, and it tries to also
+#                       # change to Debian mirrors in China (if applicable -- run with elevated
+#                       # permissions and on a Debian platform)
+#
+
+# TEMPLATE_PLACEHOLDER
 
 # Exit codes:
 # 2: application configuration error
 # 3: execution error somewhere in the bootstrap pipeline
 # 6: platform or package manager not supported
 
-#set -o pipefail
+INAUGURATE_VERSION=1
 
 if [ ! -z "$INAUGURATE_DEBUG" ]; then
     DEBUG=true
@@ -14,25 +60,11 @@ if [ "$DEBUG" = true ]; then
     set -x
 fi
 
-# prepare pip, conda & apt channels if necessary
-# PIP_INDEX_URL=""
-# CONDA_CHANNEL=""
-
-#PIP_INDEX_URL=
-#CONDA_CHANNEL=
-CHINA=true
+# prepare some settings
 if [ "$CHINA" = true ]; then
   PIP_INDEX_URL="https://pypi.tuna.tsinghua.edu.cn/simple"
   CONDA_CHANNEL="https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/free/"
 fi
-
-# # convert exitcodes to events
-# # trap "throw EXIT"    EXIT
-# # trap "throw SIGINT"  SIGINT
-# # trap "throw SIGTERM" SIGTERM
-
-# addListener VIRTUALENV_ERROR error_message
-# addListener CONDA_ERROR error_message
 
 trap 'error_exit "Bootstrapping interrupted, exiting...; exit"' SIGHUP SIGINT SIGTERM
 
@@ -68,7 +100,6 @@ else
     fi
 fi
 
-
 # echo "ROOT_PERMISSIONS: $root_permissions"
 # echo "INAUGURATE_USER: $INAUGURATE_USER"
 
@@ -91,24 +122,9 @@ INAUGURATE_RPM_DEPENDENCIES="epel-release wget git python-virtualenv openssl-dev
 INAUGURATE_PIP_DEPENDENCIES="inaugurate"
 
 # profile dependent
-if [ "$PROFILE_NAME" == "frkl" ]; then
+EXECUTABLE_NAME="$PROFILE_NAME"
+if [[ "$PROFILE_NAME" == "freckles" || "$PROFILE_NAME" == "frecklecute" ]]; then
   # conda
-  EXECUTABLE_NAME="frkl"
-  CONDA_PYTHON_VERSION="2.7"
-  CONDA_DEPENDENCIES="pip git"
-  EXECUTABLES_TO_LINK="$PROFILE_NAME"
-  # deb
-  DEB_DEPENDENCIES="build-essential git python-dev python-virtualenv libssl-dev libffi-dev"
-  # rpm
-  RPM_DEPENDENCIES="epel-release wget git python-virtualenv openssl-devel gcc libffi-devel python-devel"
-  # pip requirements
-  PIP_DEPENDENCIES="pyyaml frkl"
-  VENV_NAME="inaugurate"
-  CONDA_ENV_NAME="inaugurate"
-  #elif [ "$PROFILE_NAME" == "freckles" ] || [ "$PROFILE_NAME" == "inaugurate" ]; then
-else
-  # conda
-  EXECUTABLE_NAME="$PROFILE_NAME"
   CONDA_PYTHON_VERSION="2.7"
   CONDA_DEPENDENCIES="pip cryptography pycrypto git"
   EXECUTABLES_TO_LINK="freckles frecklecute"
@@ -374,6 +390,15 @@ function link_conda_executables {
     do
         link_path_to_local_bin "$INAUGURATE_CONDA_PATH" "$pkgName"
     done
+    LINKED_CONDA_EXECUTABLES=true
+}
+
+function remove_conda_executables {
+
+    for pkgName in conda activate deactivate
+    do
+        rm -f "$LOCAL_BIN_PATH/$pkgName"
+    done
 }
 
 function link_required_executables {
@@ -381,6 +406,14 @@ function link_required_executables {
     for pkgName in $2
     do
         link_path_to_local_bin "$1" "$pkgName"
+    done
+}
+
+function remove_local_bin_links {
+
+    for pkg_name in $1
+    do
+        rm -f "$LOCAL_BIN_PATH/$pkg_name"
     done
 }
 
@@ -495,7 +528,7 @@ export PATH="$LOCAL_BIN_PATH:$INAUGURATE_BIN_PATH:$PATH"
 execute_log "echo Starting inaugurate bootstrap: `date`" "Error"
 
 # prepare pip, conda and apt mirrors if necessary
-if [ $CHINA = 'true' ]; then
+if [ "$CHINA" = true ]; then
     CONDA_DOWNLOAD_URL_LINUX="https://mirrors.tuna.tsinghua.edu.cn/anaconda/miniconda/Miniconda2-latest-Linux-x86_64.sh"
     CONDA_DOWNLOAD_URL_MAC="https://mirrors.tuna.tsinghua.edu.cn/anaconda/miniconda/Miniconda2-latest-MacOSX-x86_64.sh"
 fi
@@ -516,7 +549,7 @@ if [ -n "$CONDA_CHANNEL" ] && [ ! -e "$INAUGURATE_USER_HOME/.condarc" ]; then
     echo "show_channel_urls: true" >> "$INAUGURATE_USER_HOME/.condarc"
 fi
 
-if [[ $CHINA = 'true' && ( "$root_permissions" = true || "$INAUGURATE_USER" == "root" ) ]]; then
+if [[ "$CHINA" = true && ( "$root_permissions" = true || "$INAUGURATE_USER" == "root" ) ]]; then
     # check if Debian
     APT_GET_CMD=$(which apt-get 2> /dev/null)
     if [[ ! -z $APT_GET_CMD ]]; then
@@ -531,35 +564,44 @@ fi
 # check if command is already in the path, if it is, assume everything is bootstrapped
 if ! command_exists $EXECUTABLE_NAME; then
 
-    if ! command_exists "inaugurate"; then
-      output ""
-      output "'inaugurate' not found in path, bootstrapping..."
-      mkdir -p "$TEMP_DIR"
-      mkdir -p "$LOCAL_BIN_PATH"
-      mkdir -p "$INAUGURATE_BIN_PATH"
-      if [ $root_permissions = true ]; then
-          chown -R "$INAUGURATE_USER" "$BASE_DIR"
-          chown -R "$INAUGURATE_USER" "$TEMP_DIR"
-          chown -R "$INAUGURATE_USER" "$LOCAL_BIN_PATH"
-          chown -R "$INAUGURATE_USER" "$INAUGURATE_BIN_PATH"
-      fi
-      output ""
-      install_inaugurate "$root_permissions"
-      output ""
-      add_inaugurate_path
+    mkdir -p "$TEMP_DIR"
+    mkdir -p "$LOCAL_BIN_PATH"
+    mkdir -p "$INAUGURATE_BIN_PATH"
+    if [ $root_permissions = true ]; then
+        chown -R "$INAUGURATE_USER" "$BASE_DIR"
+        chown -R "$INAUGURATE_USER" "$TEMP_DIR"
+        chown -R "$INAUGURATE_USER" "$LOCAL_BIN_PATH"
+        chown -R "$INAUGURATE_USER" "$INAUGURATE_BIN_PATH"
     fi
+    output ""
+    install_inaugurate "$root_permissions"
+    output ""
+    if [ ! $SELF_DESTRUCT = true ]; then
+        add_inaugurate_path
+    fi
+
     if ! command_exists $EXECUTABLE_NAME; then
         output "'$EXECUTABLE_NAME' not found in path, inaugurating..."
         inaugurate "$1"
     fi
     shift
     output ""
-    output "Bootstrappings finished, now attempting to run '$EXECUTABLE_NAME' (like so: '$EXECUTABLE_NAME $@')"
-    output ""
-    output "========================================================================"
-    output ""
+    if [ "$NO_EXEC" = true ]; then
+        output "Boostrapping finished, NO_EXEC flag set, so not executing '$EXECUTABLE_NAME', exiting instead..."
+        exit 0
+    else
+        output "Bootstrapping finished, now attempting to run '$EXECUTABLE_NAME' (like so: '$EXECUTABLE_NAME $@')"
+        output ""
+        output "========================================================================"
+        output ""
+    fi
 else
-    shift
+    if [ "$NO_EXEC" = true ]; then
+        output "NO_EXEC flag set, so not executing '$EXECUTABLE_NAME'. Exiting..."
+        exit 0
+    else
+        shift
+    fi
 fi
 
 execute_log "echo Finished '$PROFILE_NAME' bootstrap: `date`" "Error"
@@ -572,3 +614,17 @@ if [ "$root_permissions" = true ] && [ "$INAUGURATE_USER" != "root" ]; then
 else
     PATH="$PATH:$LOCAL_BIN_PATH:$INAUGURATE_BIN_PATH" "$EXECUTABLE_NAME" "$@"
 fi
+
+if [ "$SELF_DESTRUCT" = true ]; then
+    output ""
+    output "  !!!  SELF_DESTRUCT flag set, deleting inaugurate-created folders and created links...  !!!"
+    remove_local_bin_links "$EXECUTABLES_TO_LINK"
+    if [ "$LINKED_CONDA_EXECUTABLES" = true ]; then
+        remove_conda_executables
+    fi
+    rm -rf "$INAUGURATE_OPT"
+    output "  !!! deleted '$INAUGURATE_OPT', exiting now...  !!!"
+    output ""
+fi
+
+exit 0
