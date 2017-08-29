@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 #
+# -------------------------------------------------------
 #
 #      _                                         _
 #     (_)                                       | |
@@ -10,13 +11,17 @@
 #                           __/ |
 #                          |___/
 #
+#
+#
 #                     Copyright 2017 by Markus Binsteiner
 #                                    licensed under GPLv3
 #
 #
+# -------------------------------------------------------
 #
-# for more information
-# please visit: https://inaugurate.io
+# for more information please visit: https://inaugurate.io
+#
+#
 #
 # ============
 # script start
@@ -238,9 +243,6 @@ INAUGURATE_RPM_DEPENDENCIES="epel-release wget git python-virtualenv openssl-dev
 # pip requirements
 INAUGURATE_PIP_DEPENDENCIES="inaugurate"
 
-# python/virtualenv related variables
-VIRTUALENV_DIR="$INAUGURATE_OPT/virtualenvs/$VENV_NAME"
-VIRTUALENV_PATH="$VIRTUALENV_DIR/bin"
 
 # conda related variables
 CONDA_DOWNLOAD_URL_LINUX="https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh"
@@ -639,6 +641,11 @@ if ! command_exists_only_user_visible $EXECUTABLE_NAME; then
     VENV_NAME="$ENV_NAME"
     CONDA_INAUGURATE_ENV_PATH="$CONDA_BASE_DIR/envs/$CONDA_ENV_NAME"
     CONDA_INAUGURATE_ENV_EXE="$CONDA_INAUGURATE_ENV_PATH/bin/conda"
+
+    # python/virtualenv related variables
+    VIRTUALENV_DIR="$INAUGURATE_OPT/virtualenvs/$VENV_NAME"
+    VIRTUALENV_PATH="$VIRTUALENV_DIR/bin"
+
 
     mkdir -p "$TEMP_DIR"
     mkdir -p "$LOCAL_BIN_PATH"
