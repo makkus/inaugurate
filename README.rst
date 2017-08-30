@@ -23,7 +23,7 @@ So here's an example on how you 'inaugurate' frecklecute_, which comes bundled w
 
 .. code-block:: console
 
-   curl https://inaugurate.sh | bash -s -- frecklecute ansible-task
+   curl https://inaugurate.sh | bash -s -- frecklecute --help
 
 As mentioned, *inaugurate* also executes the application once it's installed, which is why the ``--help`` option is provided in this example. This behaviour can be turned off, if needed:
 
