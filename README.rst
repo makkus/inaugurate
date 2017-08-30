@@ -10,8 +10,8 @@ Features
 - lets you install (mainly python, but potentially also other) applications and run them in the same go
 - can (optionally) delete itself and the application it bootstrapped after the command was executed
 - has no dependencies except for either ``curl`` or ``wget``
-- creates seperate environments for each package it installs (either via python virtualenv or conda)
 - supports 'non-root'-permission installs (via conda_)
+- creates seperate environments for each package it installs (either via python virtualenv or conda)
 - has it's own 'official' app_store_, or lets you use your own local one
 - supports Debian-, RedHat- based Linux distros, as well as Mac OS X
 
@@ -83,8 +83,8 @@ Or, using ``sudo``:
 *app execution*
     this is the same you'd use if you would execute the application if it was already installed and available in your ``PATH``, for example: ``ansible-playbook --ask-become-pass play.yml``
 
-apps
-^^^^
+apps descriptions
+^^^^^^^^^^^^^^^^^
 
 *inaugurate* uses text files that describe the requirements that are needed to install an application. This is an example for such a description, for the application *ansible*:
 
@@ -221,12 +221,12 @@ Adding the *inaugurate* path to ``.profile`` can be disable by specifying the ``
 
 .. code-block::
 
-    NO_ADD_PATH=true curl https://inaugurate.sh | bash -s -- cookiecutter gh:audreyr/cookiecutter-pypackage
+    curl https://inaugurate.sh | NO_ADD_PATH=true bash -s -- cookiecutter gh:audreyr/cookiecutter-pypackage
 
 You'll have to figure out a way to manually add your inaugurated applications to your ``$PATH``, or you always specify the full path.
 
-Folders
-^^^^^^^
+install folders
+^^^^^^^^^^^^^^^
 
 Everything is installed in the users home directory, under ``$HOME/.local/inaugurate``. Each application you 'inaugurate' gets its own environemnt (a python *virtualenv* in case of a *sudo* install, or a `conda environment <https://conda.io/docs/user-guide/tasks/manage-environments.html>`_ otherwise). The executables that are specified in the *inaugurate* app description (for example: https://github.com/inaugurate/store/blob/master/ansible) will be linked into the folder ``$HOME/.local/bin``.
 
