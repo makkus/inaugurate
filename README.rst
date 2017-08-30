@@ -10,32 +10,32 @@ Features
 - lets you install (mainly python, but potentially also other) applications and run them in the same go
 - can (optionally) delete itself and the application it bootstrapped after the command was executed
 - has no dependencies except for either ``curl`` or ``wget``
-- can create seperate environments for each package it installs (either via python virtualenv or conda)
+- creates seperate environments for each package it installs (either via python virtualenv or conda)
 - supports 'non-root'-permission installs (via conda_)
 - has it's own 'official' app_store_, or lets you use your own local one
 - supports Debian-, RedHat- based Linux distros, as well as Mac OS X
 
 
-Example
--------
+Examples
+--------
 
-Right, so here's how you 'inaugurate' frecklecute_, which comes bundled with freckles_ and lets you run 'declarative' scripts (basically wrapped *ansible* playbooks). This is a good example of when it's useful to be able to install and run at the same time, since in some cases you might not ever need to run *frecklecute* again (for example, if you use it to build a Docker container within a ``Dockerfile``:
+So here's an example on how you 'inaugurate' frecklecute_, which comes bundled with freckles_ and lets you run 'declarative' scripts (basically wrapped *ansible* playbooks). This is a good example of when it's useful to be able to install and run at the same time, since in some cases you might not ever need to run *frecklecute* again (for example, if you use it to build a Docker container within a ``Dockerfile``:
 
 .. code-block:: console
 
-   curl https://inaugurate.sh | bash -s -- frecklecute --help
+   curl https://inaugurate.sh | bash -s -- frecklecute ansible-task
 
 As mentioned, *inaugurate* also executes the application once it's installed, which is why the ``--help`` option is provided in this example. This behaviour can be turned off, if needed:
 
 .. code-block:: console
 
-   NO_EXEC=true curl https://inaugurate.sh | bash -s -- frecklecute
+   curl https://inaugurate.sh | NO_EXEC=true bash -s -- frecklecute --help
 
 Of course, we can also use ``wget`` instead of ``curl``:
 
 .. code-block:: console
 
-   SELF_DESTRUCT=true wget -O - https://inaugurate.sh | bash -s -- frecklecute --help
+   wget -O - https://inaugurate.sh | SELF_DESTRUCT=true bash -s -- frecklecute --help
 
 In this last example, *inaugurate* will delete itself and the application it just installed after that application ran. Again, this might for example be useful if you build a container, and want the end-product be as slim as possible.
 
@@ -306,6 +306,7 @@ License
 GNU General Public License v3
 
 .. _freckles: https://github.com/makkus/freckles
+.. _frecklecute: https://docs.freckles.io/en/latest/frecklecute.html
 .. _conda: https://conda.io
 .. _app_store: https://github.com/inaugurate/store
 .. _ansible: http://docs.ansible.com/ansible/latest/intro_installation.html
