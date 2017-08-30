@@ -83,8 +83,8 @@ Or, using ``sudo``:
 *app execution*
     this is the same you'd use if you would execute the application if it was already installed and available in your ``PATH``, for example: ``ansible-playbook --ask-become-pass play.yml``
 
-apps
-^^^^
+apps descriptions
+^^^^^^^^^^^^^^^^^
 
 *inaugurate* uses text files that describe the requirements that are needed to install an application. This is an example for such a description, for the application *ansible*:
 
@@ -225,8 +225,8 @@ Adding the *inaugurate* path to ``.profile`` can be disable by specifying the ``
 
 You'll have to figure out a way to manually add your inaugurated applications to your ``$PATH``, or you always specify the full path.
 
-Folders
-^^^^^^^
+install folders
+^^^^^^^^^^^^^^^
 
 Everything is installed in the users home directory, under ``$HOME/.local/inaugurate``. Each application you 'inaugurate' gets its own environemnt (a python *virtualenv* in case of a *sudo* install, or a `conda environment <https://conda.io/docs/user-guide/tasks/manage-environments.html>`_ otherwise). The executables that are specified in the *inaugurate* app description (for example: https://github.com/inaugurate/store/blob/master/ansible) will be linked into the folder ``$HOME/.local/bin``.
 
