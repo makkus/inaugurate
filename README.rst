@@ -5,7 +5,7 @@ inaugurate
 Features
 --------
 
-*inaugurate* is a bootstrap script that:
+*inaugurate* is a generic bootstrap script that:
 
 - lets you install (mainly python, but potentially also other) applications and run them in the same go
 - can (optionally) delete itself and the application it bootstrapped after the command was executed
@@ -15,14 +15,6 @@ Features
 - has it's own 'official' app_store_, or lets you use your own local one
 - supports Debian-, RedHat- based Linux distros, as well as Mac OS X
 
-Description
------------
-
-*inaugurate* was written for freckles_ to enable 'one-line' bootstrap of whole working environments. It turned out to be fairly easy to make it more generic, so it got its own project here. *inaugurate* (obviously) is not useful for simple cases where you just need to install an application, in 95% of all cases you can do that by just using your system package manager (``apt install the-package-you-want``).
-
-Some applications require a bit more effort to install (e.g. ansible_ using pip). While still being fairly trivial, you need to install some system dependencies, then, if you want to do it properly, create a virtualenv_ and ``pip install`` the package into it. Those are the cases where *inaugurate* is of some use as it can do those things automatically.
-
-The main reason for writing *inaugurate* was the aforementioned 'one-line' bootstrap though. Admittedly, I have no idea how often this can be of use for the general public, but I figure its a basic enough pattern that I haven't seen implemented elsewhere (yet -- also I might not have looked well enough), at least not in a generic fashion, so I imagine there are a few situations where it will make sense. You'll know it when you see it, sorta thing.
 
 Example
 -------
@@ -47,8 +39,66 @@ Of course, we can also use ``wget`` instead of ``curl``:
 
 In this last example, *inaugurate* will delete itself and the application it just installed after that application ran. Again, this might for example be useful if you build a container, and want the end-product be as slim as possible.
 
+Description
+-----------
+
+*inaugurate* was written for freckles_ to enable 'one-line' bootstrap of whole working environments. It turned out to be fairly easy to make it more generic, so it got its own project here. *inaugurate* (obviously) is not useful for simple cases where you just need to install an application, in 95% of all cases you can do that by just using your system package manager (``apt install the-package-you-want``).
+
+Some applications require a bit more effort to install (e.g. ansible_ using pip). While still being fairly trivial, you need to install some system dependencies, then, if you want to do it properly, create a virtualenv_ and ``pip install`` the package into it. Those are the cases where *inaugurate* is of some use as it can do those things automatically.
+
+The main reason for writing *inaugurate* was the aforementioned 'one-line' bootstrap though. Admittedly, I have no idea how often this can be of use for the general public, but I figure its a basic enough pattern that I haven't seen implemented elsewhere (yet -- also I might not have looked well enough), at least not in a generic fashion, so I imagine there are a few situations where it will make sense. You'll know it when you see it, sorta thing.
+
+
 Usage
 -----
+
+apps
+^^^^
+
+*inaugurate* can read text files that describe the requirements that are needed to install an application. This is an example for such a description for *ansible*:
+
+.. code-block:: console
+
+    ENV_NAME=ansible
+    EXECUTABLES_TO_LINK=ansible ansible-playbook ansible-galaxy ansible-vault ansible-console ansible-doc ansible-pull
+    EXTRA_EXECUTABLES=
+    # conda
+    CONDA_PYTHON_VERSION=2.7
+    CONDA_DEPENDENCIES=pip cryptography pycrypto git
+    # deb
+    DEB_DEPENDENCIES=curl build-essential git python-dev python-virtualenv libssl-dev libffi-dev
+    # rpm
+    RPM_DEPENDENCIES=epel-release wget git python-virtualenv openssl-devel gcc libffi-devel python-devel
+    # pip requirements
+    PIP_DEPENDENCIES=ansible
+
+By default, *inaugurate* will check whether there is a file named after the provided app name (the first argument to the script) in ``$HOME/.inaugurate/local-store``. If there is, this will be read and the application described therein will be 'inaugurated'. If no such file exists, *inaugurate* will check whether such a file exists on the official inaugurate app_store_.
+
+Here's what the different vars mean:
+
+*ENV_NAME*
+    the name of the conda or virtualenv that will be created
+
+*EXECUTABLES_TO_LINK*
+    a list of executables that should be linked ot ``$HOME/.local/bin``
+
+*EXTRA_EXECUTABLES*
+    an optional list of secondary executables. this is mainly used within freckles_. executables in this list are linked into ``$HOME/.local/inaugurate/bin``
+
+*CONDA_PYTHON_VERSION*
+    if using conda, this is the python version that is used in the new environment
+
+*CONDA_DEPENDENCIES*
+    if using conda, those are the packages that will be installed into the new environment
+
+*DEB_DEPENDENCIES*
+    if using sudo/root-permissions, and running on a Debian-based platform, those are the packages that should be installed using apt
+
+*RPM_DEPENDENCIES*
+    if using sudo/root-permissions, and running on a RedHat-based platform those are the packages that should be installed using yum
+
+*PIP_DEPENDENCIES*
+    the python packages to install in the conda or virtualenv environment
 
 curl
 ^^^^
@@ -215,9 +265,9 @@ Is this secure?
 
 What? Downloading and executing a random script from the internet? Duh.
 
-That being said, you can download `inaugurate.sh <https://raw.githubusercontent.com/makkus/inaugurate/master/inaugurate.sh>`_ and host it yourself somewhere on github (or somewhere else). If you only use app descriptions locally (or, as those app descriptions are fairly easy to parse and understand, you read the ones the are hosted on the 'official' inaugurate app_store_) you have the same sort of control you'd have if you'd do all the things *inaugurate* does manually.
+That being said, you can download the `inaugurate.sh <https://raw.githubusercontent.com/makkus/inaugurate/master/inaugurate.sh>`_ script and host it yourself on github (or somewhere else). If you only use app descriptions locally (or, as those app descriptions are fairly easy to parse and understand, you read the ones the are hosted on the 'official' inaugurate app_store_) you have the same sort of control you'd have if you'd do all the things *inaugurate* does manually.
 
-I'd argue it'd be slightly better to have one generic, widely-used script with easy-to-read app descriptions than every app out there writing their own bootstrap script. *inaugurate* (possibly in combination with *frecklecute* to support more advanced setup tasks) could be such a thing, but I'd be happy if someone else writes a better alternative. Just saying, it's more practical to not have to read a whole bash script everytime you want to bootstrap a non-trivial-to-install application.
+I'd argue it's slightly better to have one generic, widely-used script with easy-to-read app descriptions than every app out there writing their own bootstrap shell script. *inaugurate* (possibly in combination with *frecklecute* to support more advanced setup tasks) could be such a thing, but I'd be happy if someone else writes a better alternative. It's more practical to not have to read a whole bash script every time you want to bootstrap a non-trivial-to-install application, is all I'm saying.
 
 License
 -------
