@@ -80,7 +80,7 @@ Or, using ``sudo``:
 *control behaviour*
     see the list below for available options
 
-* app execution*
+*app execution*
     this is the same you'd use if you would execute the application if it was already installed and available in your ``PATH``
 
 apps
