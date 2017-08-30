@@ -52,6 +52,37 @@ The main reason for writing *inaugurate* was the aforementioned 'one-line' boots
 Usage
 -----
 
+cli
+^^^
+
+Here's how the commandline interface looks on a high level:
+
+.. code-block:: console
+
+    <curl_or_wget_command> https://inaugurate.sh | ENV_KEY_1=<env_value_1> ENV_KEY_2=<env_value> bash -s -- <application> <app_args>
+    |                    | |                   |   |                                           |           |                      |
+     - download command -   ------- url -------     ---------- control behaviour --------------             ---- app execution ---
+
+Or, using ``sudo``:
+
+.. code-block:: console
+
+    <curl_or_wget_command> https://inaugurate.sh | sudo ENV_KEY_1=<env_value_1> ENV_KEY_2=<env_value> bash -s -- <application> <app_args>
+    |                    | |                   |        |                                           |           |                      |
+     - download command -   ------- url -------          ---------- control behaviour --------------             ---- app execution ---
+
+*download command*
+    either ``curl`` (or use ``curl -s`` if you don't want to see its progress), or ``wget -O -``
+
+*url*
+    always ``https://inaugurate.sh`` (you can also use ``https://freckles.io`` if you want, though)
+
+*control behaviour*
+    see the list below for available options
+
+* app execution*
+    this is the same you'd use if you would execute the application if it was already installed and available in your ``PATH``
+
 apps
 ^^^^
 
