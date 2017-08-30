@@ -2,6 +2,9 @@
 inaugurate
 ==========
 
+Features
+--------
+
 *inaugurate* is a bootstrap script that:
 
 - lets you install (mainly python, but potentially also other) applications and run them in the same go
@@ -12,9 +15,14 @@ inaugurate
 - has it's own 'official' app_store_, or lets you use your own local one
 - supports Debian-, RedHat- based Linux distros, as well as Mac OS X
 
-*inaugurate* was written for freckles_ to enable 'one-line' bootstrap of whole working environments. It turned out to be fairly easy to make it more generic, so it got its own project here. *inaugurate* (obviously) is not useful for simple cases where you just need to install an application, in 95% of all cases you can do that by just using your system package manager (``apt install the-package-you-want``). Some applications require a bit more effort to install (e.g. ansible_ using pip). While still being fairly trivial, you need to install some system dependencies, then, if you want to do it properly, create a virtualenv_ and ``pip install`` the package into it. Those are the cases where *inaugurate* is of some use as it can do those things automatically.
+Description
+-----------
 
-The main reason for writing *inaugurate* was the aforementioned 'one-line' bootstrap though. Admittedly, I have no idea how often this can be of use for the general public, but its a basic enough pattern that I haven't seen implemented elsewhere (yet -- also I might not have looked well enough), at least not in a generic fashion, so I imagine there are a few situations where it will make sense. You'll know it when you see it, sorta thing.
+*inaugurate* was written for freckles_ to enable 'one-line' bootstrap of whole working environments. It turned out to be fairly easy to make it more generic, so it got its own project here. *inaugurate* (obviously) is not useful for simple cases where you just need to install an application, in 95% of all cases you can do that by just using your system package manager (``apt install the-package-you-want``).
+
+Some applications require a bit more effort to install (e.g. ansible_ using pip). While still being fairly trivial, you need to install some system dependencies, then, if you want to do it properly, create a virtualenv_ and ``pip install`` the package into it. Those are the cases where *inaugurate* is of some use as it can do those things automatically.
+
+The main reason for writing *inaugurate* was the aforementioned 'one-line' bootstrap though. Admittedly, I have no idea how often this can be of use for the general public, but I figure its a basic enough pattern that I haven't seen implemented elsewhere (yet -- also I might not have looked well enough), at least not in a generic fashion, so I imagine there are a few situations where it will make sense. You'll know it when you see it, sorta thing.
 
 Example
 -------
@@ -35,15 +43,69 @@ Of course, we can also use ``wget`` instead of ``curl``:
 
 .. code-block:: console
 
-   SELF_DESTRUCT=true wget -O - https://freckles.io | bash -s -- frecklecute --help
+   SELF_DESTRUCT=true wget -O - https://inaugurate.sh | bash -s -- frecklecute --help
 
 In this last example, *inaugurate* will delete itself and the application it just installed after that application ran. Again, this might for example be useful if you build a container, and want the end-product be as slim as possible.
 
 Usage
 -----
 
-sudo / non-sudo
-env vars
+curl
+^^^^
+
+As mentioned above, this is how to invoke *inaugurate* using ``curl``:
+
+.. code-block::
+
+    curl https://inaugurate.sh | bash -s -- <app_name> <app_args>>
+
+wget
+^^^^
+
+And using ``wget``:
+
+.. code-block::
+
+    wget -O - https://inaugurate.sh | bash -s -- <app_name> <app_args>
+
+For the following examples I'll always use ``curl``, but of course you can use ``wget`` interchangeably.
+
+sudo/non-sudo
+^^^^^^^^^^^^^
+
+One of the main features of *inaugurate* is the option to install whatever you want to install without having to use ``root`` or ``sudo`` permissions. This only works for applications that are available via conda_, or python packages.
+
+The way to tell *inaugurate* whether to use *conda* or not is by either calling it via sudo (or as ``root`` user) or as a 'normal' user. In the former case *inaugurate* will install system packages, in the latter it will install conda (if not already available) and contain all other dependencies within a *conda* environment.
+
+To call *inaugurate* using ``sudo``, potentially/optionally using a environment variable to control its behaviour, you do something like:
+
+.. code-block:: console
+
+   curl https://inaugurate.sh | sudo NO_EXEC=true bash -s -- frecklecute --help
+
+environment variables
+^^^^^^^^^^^^^^^^^^^^^
+
+Here's a list of environment variables that can be used, by default all variables are set to false or are empty strings:
+
+*NO_ADD_PATH*
+    if set to true, *inaugurate* won't add ``$HOME/.local/bin`` to the path in the ``$HOME/.profile`` file
+
+*NO_EXEC*
+    if set to true, *inaugurate* won't execute the inaugurated application after install
+
+*SELF_DESTRUCT*
+    if set to true, *inaugurate* will delete everything it installed in this run (under ``$HOME/.local/inaugurate``)
+
+*PIP_INDEX_URL*
+    if set, a file ``$HOME/.pip/pip.conf`` will be created, and the provided string will be set as as ``index-url`` (only if ``pip.conf`` does not exist already)
+
+*CONDA_CHANNEL*
+    if set, a file ``$HOME/.condarc`` will be created, and the provided string will be set as the (sole) conda channel (only if ``.condarc`` does not exist yet)
+
+*CHINA*
+    if set to true, ``PIP_INDEX_URL`` and ``CONDA_CHANNEL`` will be set to urls that are faster when used within China as they are not outside the GFW, also, this will try to set debian mirrors to ones withing China (if host machine is Debian, and *inaugurate* is run with sudo permissions) -- this is really only a convenience setting I used when staying in Beijing, but I imagine it might help users in China -- if there ever will be any
+
 
 How does this work? What does it do?
 ------------------------------------
