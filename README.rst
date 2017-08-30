@@ -19,7 +19,7 @@ Features
 Examples
 --------
 
-So here's an example on how you 'inaugurate' frecklecute_, which comes bundled with freckles_ and lets you run 'declarative' scripts (basically wrapped *ansible* playbooks). This is a good example of when it's useful to be able to install and run at the same time, since in some cases you might not ever need to run *frecklecute* again (for example, if you use it to build a Docker container within a ``Dockerfile``:
+So here's an example on how you 'inaugurate' frecklecute_, which comes bundled with freckles_ and lets you run 'declarative' scripts (basically wrapped *ansible* playbooks). This is a good example of when it's useful to be able to install and run at the same time, since in some cases you might not ever need to run *frecklecute* again (for example, if you use it to build a Docker container within a ``Dockerfile``):
 
 .. code-block:: console
 
@@ -81,12 +81,12 @@ Or, using ``sudo``:
     see the list below for available options
 
 *app execution*
-    this is the same you'd use if you would execute the application if it was already installed and available in your ``PATH``
+    this is the same you'd use if you would execute the application if it was already installed and available in your ``PATH``, for example: ``ansible-playbook --ask-become-pass play.yml``
 
 apps
 ^^^^
 
-*inaugurate* can read text files that describe the requirements that are needed to install an application. This is an example for such a description for *ansible*:
+*inaugurate* uses text files that describe the requirements that are needed to install an application. This is an example for such a description, for the application *ansible*:
 
 .. code-block:: console
 
@@ -131,8 +131,13 @@ Here's what the different vars mean:
 *PIP_DEPENDENCIES*
     the python packages to install in the conda or virtualenv environment
 
+downloading *inaugurate.sh*
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+As already mentioned, you can either use ``curl`` or ``wget`` to download *inaugurate.sh*. Actually, any other tool you have at hand that can download files from the internet, and pipe out their content. I focus on ``curl`` and ``wget`` since the likelyhood one of them is installed is highest.
+
 curl
-^^^^
+++++
 
 As mentioned above, this is how to invoke *inaugurate* using ``curl``:
 
@@ -141,7 +146,7 @@ As mentioned above, this is how to invoke *inaugurate* using ``curl``:
     curl https://inaugurate.sh | bash -s -- <app_name> <app_args>>
 
 wget
-^^^^
+++++
 
 And using ``wget``:
 
@@ -167,7 +172,7 @@ To call *inaugurate* using ``sudo``, potentially/optionally using a environment 
 environment variables
 ^^^^^^^^^^^^^^^^^^^^^
 
-Here's a list of environment variables that can be used, by default all variables are set to false or are empty strings:
+Here's a list of environment variables that can be used to change *inaugurate's* default behaviour, by default all variables are set to false or are empty strings:
 
 *NO_ADD_PATH*
     if set to true, *inaugurate* won't add ``$HOME/.local/bin`` to the path in the ``$HOME/.profile`` file
