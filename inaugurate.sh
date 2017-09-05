@@ -104,7 +104,7 @@ INSTALL_LOG_DIR="$INAUGURATE_OPT/logs/"
 
 TEMP_DIR="$INAUGURATE_OPT/tmp/"
 
-SCRIPT_LOG_FILE="$INSTALL_LOG_DIR/install_$(date -d "today" +"%Y%m%d%H%M%S").log"
+SCRIPT_LOG_FILE="$INSTALL_LOG_DIR/install_$(date +"%Y%m%d%H%M%S").log"
 mkdir -p "$INSTALL_LOG_DIR"
 touch "$SCRIPT_LOG_FILE"
 chmod 700 "$SCRIPT_LOG_FILE"
@@ -602,9 +602,9 @@ if [[ "$CHINA" = true && ( "$root_permissions" = true || "$INAUGURATE_USER" == "
        output ""
        output "setting apt sources to ftp.cn.debian.org mirror"
        if [ ! -e /etc/apt/sources.list.bak.inaugurate ]; then
-            sudo cp /etc/apt/sources.list /etc/apt/sources.list.bak.inaugurate
+            cp /etc/apt/sources.list /etc/apt/sources.list.bak.inaugurate
        fi
-       sudo sed -i 's/deb.debian.org/ftp.cn.debian.org/g' /etc/apt/sources.list
+       sed -i 's/deb.debian.org/ftp.cn.debian.org/g' /etc/apt/sources.list
     fi
 fi
 
