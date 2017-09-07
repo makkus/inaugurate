@@ -198,6 +198,8 @@ How does this work? What does it do?
 
 *inaugurate* is a `shell script <https://github.com/makkus/inaugurate/blob/master/inaugurate.sh>`_ that, in most cases, will be downloaded via ``curl`` or ``wget`` (obviously you can just download it once and invoke it directly). It's behaviour can be controlled by environment variables (see examples above).
 
+*inaugurate* touches two things when it is run. It adds a line to ``$HOME/.profile``, and it creates a folder ``$HOME/.local/inaugurate`` where it puts all the application data it installs. In addition, if invoked using root permissions, it will also potentially install dependencies via system packages.
+
 .profile
 ^^^^^^^^
 
