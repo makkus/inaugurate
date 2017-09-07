@@ -227,8 +227,8 @@ Adding the *inaugurate* path to ``.profile`` can be disable by specifying the ``
 
 You'll have to figure out a way to manually add your inaugurated applications to your ``$PATH``, or you always specify the full path.
 
-install folders
-^^^^^^^^^^^^^^^
+package install locations
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Everything is installed in the users home directory, under ``$HOME/.local/inaugurate``. Each application you 'inaugurate' gets its own environemnt (a python *virtualenv* in case of a *sudo* install, or a `conda environment <https://conda.io/docs/user-guide/tasks/manage-environments.html>`_ otherwise). The executables that are specified in the *inaugurate* app description (for example: https://github.com/inaugurate/store/blob/master/ansible) will be linked into the folder ``$HOME/.local/bin``.
 
