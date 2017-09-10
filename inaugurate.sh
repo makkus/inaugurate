@@ -223,7 +223,7 @@ config_get() {
     DEB_DEPENDENCIES="$(config_read "${CONFIG}" "DEB_DEPENDENCIES")";
     RPM_DEPENDENCIES="$(config_read "${CONFIG}" "RPM_DEPENDENCIES")";
     PIP_DEPENDENCIES="$(config_read "${CONFIG}" "PIP_DEPENDENCIES")";
-    ENV_NAME="$(config_read "${CONFIG}" "PIP_DEPENDENCIES")";
+    ENV_NAME="$(config_read "${CONFIG}" "ENV_NAME")";
     if [ "${ENV_NAME}" = "__UNDEFINED__" ]; then
         ENV_NAME="$EXECUTABLE_NAME"
     fi
