@@ -303,9 +303,41 @@ Is this secure?
 
 What? Downloading and executing a random script from the internet? Duh.
 
-That being said, you can download the `inaugurate.sh <https://raw.githubusercontent.com/makkus/inaugurate/master/inaugurate.sh>`_ script and host it yourself on github (or somewhere else). If you only use app descriptions locally (or, as those app descriptions are fairly easy to parse and understand, you read the ones the are hosted on the 'official' inaugurate app_store_) you have the same sort of control you'd have if you'd do all the things *inaugurate* does manually.
+That being said, you can download the `inaugurate.sh <https://raw.githubusercontent.com/makkus/inaugurate/master/inaugurate.sh>`_ script and host it yourself on github (or somewhere else). If you then only use app descriptions locally (or, as those app descriptions are fairly easy to parse and understand, you read the ones the are hosted on the 'official' inaugurate app_store_) you have the same sort of control you'd have if you'd do all the things *inaugurate* does manually.
 
 I'd argue it's slightly better to have one generic, widely-used and looked upon script, that uses easy to parse configurations for the stuff it installs, than every app out there writing their own bootstrap shell script. *inaugurate* (possibly in combination with *frecklecute* to support more advanced setup tasks) could be such a thing, but I'd be happy if someone else writes a better alternative. It's more practical to not have to read a whole bash script every time you want to bootstrap a non-trivial-to-install application, is all I'm saying.
+
+Supported
+---------
+
+Those are the platforms I have tested so far, others might very well work too. I did my development mainly on Debian-based systems, so other Linux distributions might not (yet) be up to scratch:
+
+- Linux
+
+  - Debian
+
+    - Stretch
+    - Jessie
+
+  - Ubuntu
+
+    - 17.04
+    - 16.10
+    - 16.04
+
+  - CentOS
+
+    - 7
+
+- Mac OS X
+
+  - El Capitan
+  - Sierra
+
+- Windows
+
+  - Windows 10 (Ubuntu subsystem) -- not tested/working yet
+
 
 License
 -------
