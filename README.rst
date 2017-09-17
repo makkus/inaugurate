@@ -103,7 +103,7 @@ apps descriptions
     # pip requirements
     PIP_DEPENDENCIES=ansible
 
-By default, *inaugurate* will check whether the first argument is a path to a locally existin file. If it is, this file will be read. If not, a file named after the provided app name (the first argument to the script) in ``$HOME/.inaugurate/local-store``. If there is, this will be read and the application described therein will be 'inaugurated'. If no such file exists, *inaugurate* will check whether such a file exists on the official inaugurate app_store_.
+By default, *inaugurate* will check whether the first argument is a path to a locally existing file. If it is, this file will be read. If not, a file named after the provided app name (the first argument to the script) in ``$HOME/.inaugurate/local-store``. If there is, this will be read and the application described therein will be 'inaugurated'. If no such file exists, *inaugurate* will check whether such a file exists on the official inaugurate app_store_.
 
 Here's what the different vars mean:
 
