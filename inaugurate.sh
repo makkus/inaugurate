@@ -98,7 +98,6 @@ INAUGURATE_USER_HOME="`eval echo ~$INAUGURATE_USER`"
 INAUGURATE_BASE_DIR="$INAUGURATE_USER_HOME/.inaugurate"
 BASE_DIR="$INAUGURATE_USER_HOME/.local"
 
-
 INAUGURATE_OPT="$BASE_DIR/inaugurate"
 INSTALL_LOG_DIR="$INAUGURATE_OPT/logs/"
 
@@ -200,17 +199,23 @@ config_get() {
 
     local_app="$INAUGURATE_LOCAL_STORE/$1"
 
-    if [ -e "$local_app" ]; then
+    if [ -e "$1" ]; then
+        app_name=$(basename "$1")
+        CONFIG=$(cat "$1")
+
+        log "Read local file config:"
+        log "$CONFIG"
+    elif [ -e "$local_app" ]; then
       CONFIG=$(cat $local_app)
 
-      log "Read local config:"
+      log "Read local store config:"
       log "$CONFIG"
     else
       url="https://raw.githubusercontent.com/inaugurate/store/master/$1"
       output "  * reading: $url"
       CONFIG="$(read_remote $url)"
 
-      log "Read remote config:"
+      log "Read remote store config:"
       log "$CONFIG"
     fi
 

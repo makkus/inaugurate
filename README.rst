@@ -103,7 +103,7 @@ apps descriptions
     # pip requirements
     PIP_DEPENDENCIES=ansible
 
-By default, *inaugurate* will check whether there is a file named after the provided app name (the first argument to the script) in ``$HOME/.inaugurate/local-store``. If there is, this will be read and the application described therein will be 'inaugurated'. If no such file exists, *inaugurate* will check whether such a file exists on the official inaugurate app_store_.
+By default, *inaugurate* will check whether the first argument is a path to a locally existin file. If it is, this file will be read. If not, a file named after the provided app name (the first argument to the script) in ``$HOME/.inaugurate/local-store``. If there is, this will be read and the application described therein will be 'inaugurated'. If no such file exists, *inaugurate* will check whether such a file exists on the official inaugurate app_store_.
 
 Here's what the different vars mean:
 
@@ -307,8 +307,8 @@ That being said, you can download the `inaugurate.sh <https://raw.githubusercont
 
 I'd argue it's slightly better to have one generic, widely-used and looked upon script, that uses easy to parse configurations for the stuff it installs, than every app out there writing their own bootstrap shell script. *inaugurate* (possibly in combination with *frecklecute* to support more advanced setup tasks) could be such a thing, but I'd be happy if someone else writes a better alternative. It's more practical to not have to read a whole bash script every time you want to bootstrap a non-trivial-to-install application, is all I'm saying.
 
-Supported
----------
+Supported platforms
+-------------------
 
 Those are the platforms I have tested so far, others might very well work too. I did my development mainly on Debian-based systems, so other Linux distributions might not (yet) be up to scratch:
 
