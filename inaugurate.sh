@@ -646,7 +646,7 @@ if ! command_exists_only_user_visible $EXECUTABLE_NAME; then
         CONDA_PYTHON_VERSION="2.7"
         CONDA_DEPENDENCIES="pip cryptography pycrypto git"
         EXECUTABLES_TO_LINK="freckles frecklecute"
-        EXTRA_EXECUTABLES="nsbl nsbl-tasks nsbl-playbook ansible ansible-playbook ansible-galaxy"
+        EXTRA_EXECUTABLES="nsbl nsbl-tasks nsbl-playbook ansible ansible-playbook ansible-galaxy git"
         # deb
         DEB_DEPENDENCIES="curl build-essential git python-dev python-virtualenv libssl-dev libffi-dev"
         # rpm
