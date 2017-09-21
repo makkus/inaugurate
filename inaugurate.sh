@@ -569,6 +569,21 @@ EOF
        output ""
        output "   source ~/.profile"
     fi
+
+    if [ -e "$INAUGURATE_USER_HOME/.bash_profile" ] && ! grep -q 'add inaugurate environment' "$INAUGURATE_USER_HOME/.bash_profile" ; then
+       cat <<"EOF" >> "$INAUGURATE_USER_HOME/.bash_profile"
+
+# add inaugurate environment
+LOCAL_BIN_PATH="$HOME/.local/bin"
+if [ -d "$LOCAL_BIN_PATH" ]; then
+    PATH="$PATH:$LOCAL_BIN_PATH"
+fi
+EOF
+
+       output "Added path to inaugurate bin dir to .bash_profile. You'll need to logout and login again to see the effect. Or you can just execute:"
+       output ""
+       output "   source ~/.bash_profile"
+    fi
 }
 
 ############# Start script ##################
