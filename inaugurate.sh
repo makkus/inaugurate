@@ -244,7 +244,7 @@ INAUGURATE_CONDA_EXECUTABLES_TO_LINK="$PROFILE_NAME"
 # deb
 INAUGURATE_DEB_DEPENDENCIES="build-essential git python-dev python-virtualenv libssl-dev libffi-dev"
 # rpm
-INAUGURATE_RPM_DEPENDENCIES="epel-release wget git python-virtualenv openssl-devel gcc libffi-devel python-devel ope  nssl-devel"
+INAUGURATE_RPM_DEPENDENCIES="epel-release wget git python-virtualenv openssl-devel gcc libffi-devel python-devel openssl-devel"
 # pip requirements
 INAUGURATE_PIP_DEPENDENCIES="inaugurate"
 
@@ -555,7 +555,7 @@ function install_conda_non_root {
 }
 
 function add_inaugurate_path {
-    if ! grep -q 'add inaugurate environment' "$INAUGURATE_USER_HOME/.profile" ; then
+    if ! grep -q 'add inaugurate environment' "$INAUGURATE_USER_HOME/.profile"  > /dev/null 2>&1 ; then
        cat <<"EOF" >> "$INAUGURATE_USER_HOME/.profile"
 
 # add inaugurate environment
@@ -571,7 +571,7 @@ EOF
     fi
 
     if [ -e "$INAUGURATE_USER_HOME/.bash_profile" ] && ! grep -q 'add inaugurate environment' "$INAUGURATE_USER_HOME/.bash_profile" ; then
-       cat <<"EOF" >> "$INAUGURATE_USER_HOME/.bash_profile"
+        cat <<"EOF" >> "$INAUGURATE_USER_HOME/.bash_profile"
 
 # add inaugurate environment
 LOCAL_BIN_PATH="$HOME/.local/bin"
@@ -580,9 +580,24 @@ if [ -d "$LOCAL_BIN_PATH" ]; then
 fi
 EOF
 
-       output "Added path to inaugurate bin dir to .bash_profile. You'll need to logout and login again to see the effect. Or you can just execute:"
-       output ""
-       output "   source ~/.bash_profile"
+        output "Added path to inaugurate bin dir to .bash_profile. You'll need to logout and login again to see the effect. Or you can just execute:"
+        output ""
+        output "   source ~/.bash_profile"
+    fi
+
+    if [ -e "$INAUGURATE_USER_HOME/.zprofile" ] && ! grep -q 'add inaugurate environment' "$INAUGURATE_USER_HOME/.zprofile" ; then
+        cat <<"EOF" >> "$INAUGURATE_USER_HOME/.zprofile"
+
+# add inaugurate environment
+LOCAL_BIN_PATH="$HOME/.local/bin"
+if [ -d "$LOCAL_BIN_PATH" ]; then
+    PATH="$PATH:$LOCAL_BIN_PATH"
+fi
+EOF
+
+        output "Added path to inaugurate bin dir to .zprofile. You'll need to logout and login again to see the effect. Or you can just execute:"
+        output ""
+        output "   source ~/.zprofile"
     fi
 }
 
