@@ -656,7 +656,7 @@ if ! command_exists_only_user_visible $EXECUTABLE_NAME; then
     VENV_NAME="$PROFILE_NAME"
     CONDA_ENV_NAME="$PROFILE_NAME"
 
-    if [[ "$PROFILE_NAME" == "freckles" || "$PROFILE_NAME" == "frecklecute" ]]; then
+    if [[ "$PROFILE_NAME" == "freckelize" || "$PROFILE_NAME" == "frecklecute" || "$PROFILE_NAME" == "freckles" ]]; then
         # conda
         CONDA_PYTHON_VERSION="2.7"
         CONDA_DEPENDENCIES="pip cryptography pycrypto git"
