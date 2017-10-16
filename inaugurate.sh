@@ -597,6 +597,7 @@ if [ -d "$LOCAL_BIN_PATH" ]; then
 fi
 EOF
 
+        output ""
         output "Added path to inaugurate bin dir to .bash_profile. You'll need to logout and login again to see the effect. Or you can just execute:"
         output ""
         output "   source ~/.bash_profile"
@@ -612,6 +613,7 @@ if [ -d "$LOCAL_BIN_PATH" ]; then
 fi
 EOF
 
+        output ""
         output "Added path to inaugurate bin dir to .zprofile. You'll need to logout and login again to see the effect. Or you can just execute:"
         output ""
         output "   source ~/.zprofile"
