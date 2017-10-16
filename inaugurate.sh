@@ -494,7 +494,6 @@ function install_inaugurate_non_root_conda {
     output "  * no elevated permissions detected, using conda package manager"
 
     if [ ! -f "$CONDA_ROOT_EXE" ]; then
-        output "  * installing conda"
         install_conda_non_root
     else
         output "  - 'conda' already present, not installing again"
