@@ -244,7 +244,7 @@ INAUGURATE_CONDA_EXECUTABLES_TO_LINK="$PROFILE_NAME"
 # deb
 INAUGURATE_DEB_DEPENDENCIES="build-essential git python-dev python-virtualenv libssl-dev libffi-dev"
 # rpm
-INAUGURATE_RPM_DEPENDENCIES="epel-release wget git python-virtualenv openssl-devel gcc libffi-devel python-devel openssl-devel"
+INAUGURATE_RPM_DEPENDENCIES="wget git python-virtualenv openssl-devel gcc libffi-devel python-devel openssl-devel"
 # pip requirements
 INAUGURATE_PIP_DEPENDENCIES="inaugurate"
 
@@ -318,8 +318,23 @@ function install_inaugurate_deb {
 function install_inaugurate_rpm {
     output "  * RedHat-based system detected."
     output "  * installing dependencies: $RPM_DEPENDENCIES"
-    execute_log "yum install -y epel-release" "Error installing dependencies via yum."
+    #execute_log "yum install -y epel-release" "Error installing epel-release via yum."
     execute_log "yum install -y $RPM_DEPENDENCIES" "Error installing dependencies via yum."
+    output "  * creating '$VENV_NAME' virtual environment"
+    create_virtualenv
+    for pkgName in $PIP_DEPENDENCIES
+    do
+        install_package_in_virtualenv $pkgName
+    done
+    link_required_executables "$VIRTUALENV_PATH" "$EXECUTABLES_TO_LINK"
+    link_extra_executables "$VIRTUALENV_PATH" "$EXTRA_EXECUTABLES"
+    #export PATH="$PATH:$VIRTUALENV_PATH"
+}
+
+function install_inaugurate_dnf {
+    output "  * RedHat-based system with 'dnf' detected."
+    output "  * installing dependencies: yum $RPM_DEPENDENCIES"
+    execute_log "dnf install -y yum $RPM_DEPENDENCIES" "Error installing dependencies via yum."
     output "  * creating '$VENV_NAME' virtual environment"
     create_virtualenv
     for pkgName in $PIP_DEPENDENCIES
@@ -377,7 +392,10 @@ function install_inaugurate_mac_root {
 function install_inaugurate_linux_root {
     YUM_CMD=$(which yum 2> /dev/null)
     APT_GET_CMD=$(which apt-get 2> /dev/null)
-    if [[ ! -z $YUM_CMD ]]; then
+    DNF_CMD=$(which dnf 2> /dev/null)
+    if [[ ! -z $DNF_CMD ]]; then
+        install_inaugurate_dnf
+    elif [[ ! -z $YUM_CMD ]]; then
         install_inaugurate_rpm
     elif [[ ! -z $APT_GET_CMD ]]; then
         install_inaugurate_deb
@@ -656,7 +674,7 @@ if ! command_exists_only_user_visible $EXECUTABLE_NAME; then
     VENV_NAME="$PROFILE_NAME"
     CONDA_ENV_NAME="$PROFILE_NAME"
 
-    if [[ "$PROFILE_NAME" == "freckelize" || "$PROFILE_NAME" == "frecklecute" || "$PROFILE_NAME" == "freckles" ]]; then
+    if [[ "$PROFILE_NAME" == "freckelize" || "$PROFILE_NAME" == "frecklecute" || "$PROFILE_NAME" == "freckles" || "$PROFILE_NAME" == "freckfreckfreck" ]]; then
         # conda
         CONDA_PYTHON_VERSION="2.7"
         CONDA_DEPENDENCIES="pip cryptography pycrypto git"
@@ -665,7 +683,7 @@ if ! command_exists_only_user_visible $EXECUTABLE_NAME; then
         # deb
         DEB_DEPENDENCIES="curl build-essential git python-dev python-virtualenv libssl-dev libffi-dev"
         # rpm
-        RPM_DEPENDENCIES="epel-release wget git python-virtualenv openssl-devel gcc libffi-devel python-devel"
+        RPM_DEPENDENCIES="wget git python-virtualenv openssl-devel gcc libffi-devel python-devel"
         # pip requirements
         PIP_DEPENDENCIES="freckles"
         ENV_NAME="inaugurate"
@@ -727,7 +745,6 @@ execute_log "echo Finished '$PROFILE_NAME' bootstrap: `date`" "Error"
 #echo "INAUGURATE_PATH: $LOCAL_BIN_PATH"
 
 if [ "$root_permissions" = true ] && [ "$INAUGURATE_USER" != "root" ]; then
-    #exec sudo -u "$INAUGURATE_USER" -i "PATH=$PATH:$LOCAL_BIN_PATH:$INAUGURATE_BIN_PATH" "$EXECUTABLE_NAME" "$@"
     exec sudo -u "$INAUGURATE_USER" "$LOCAL_BIN_PATH/$EXECUTABLE_NAME" "$@"
 else
     PATH="$PATH:$LOCAL_BIN_PATH:$INAUGURATE_BIN_PATH" "$EXECUTABLE_NAME" "$@"
