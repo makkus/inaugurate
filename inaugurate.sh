@@ -120,7 +120,7 @@ function error_exit
     #	----------------------------------------------------------------
 
 
-	  error_output "${PROGNAME}: ${1:-"Unknown Error"}" 1>&2
+	  error_output "${PROGNAME}: ${1:-"Unknown Error"}, check log file for details -> $SCRIPT_LOG_FILE" 1>&2
 	  exit 1
 }
 
@@ -277,9 +277,9 @@ source "$VIRTUALENV_DIR/bin/activate"
 pip install --upgrade pip
 pip install --upgrade setuptools wheel
 pip install --upgrade requests
-set -e
+#set -e
 EOF
-    } >> "$SCRIPT_LOG_FILE" 2>&1 || error_exit "Could not create '$VENV_NAME' virtual environment"
+    } >> "$SCRIPT_LOG_FILE" 2>&1 || error_exit "Could not create '$VENV_NAME' virtual environment, check log file for details: $SCRIPT_LOG_FILE"
 }
 
 #TODO: exception handling for this
@@ -291,9 +291,9 @@ function install_package_in_virtualenv {
 set +e
 source "$VIRTUALENV_DIR/bin/activate"
 pip install --upgrade "$1" --upgrade-strategy only-if-needed
-set -e
+#set -e
 EOF
-    } >> "$SCRIPT_LOG_FILE" 2>&1 || error_exit "Could not create '$VENV_NAME' virtual environment"
+    } >> "$SCRIPT_LOG_FILE" 2>&1 || error_exit "Could not create '$VENV_NAME' virtual environment, check log file for details: $SCRIPT_LOG_FILE"
 }
 
 
@@ -333,8 +333,8 @@ function install_inaugurate_rpm {
 
 function install_inaugurate_dnf {
     output "  * RedHat-based system with 'dnf' detected."
-    output "  * installing dependencies: yum $RPM_DEPENDENCIES"
-    execute_log "dnf install -y yum $RPM_DEPENDENCIES" "Error installing dependencies via yum."
+    output "  * installing dependencies: yum python-dnf $RPM_DEPENDENCIES"
+    execute_log "dnf install -y yum python-dnf $RPM_DEPENDENCIES" "Error installing dependencies via yum."
     output "  * creating '$VENV_NAME' virtual environment"
     create_virtualenv
     for pkgName in $PIP_DEPENDENCIES
@@ -434,10 +434,68 @@ function install_inaugurate_root {
     fi
 }
 
+function calculate_relative_path {
+    # from: https://unix.stackexchange.com/questions/85060/getting-relative-links-between-two-paths
+    # both $1 and $2 are absolute paths beginning with /
+    # $1 must be a canonical path; that is none of its directory
+    # components may be ".", ".." or a symbolic link
+    #
+    # returns relative path to $2/$target from $1/$source
+
+    source=$1
+    target=$2
+
+    common_part=$source
+    result=""
+
+    while [ "${target#"$common_part"}" = "$target" ]; do
+        # no match, means that candidate common part is not correct
+        # go up one level (reduce common part)
+        common_part=$(dirname "$common_part")
+        # and record that we went back, with correct / handling
+        if [ -z "$result" ]; then
+            result=".."
+        else
+            result="../$result"
+        fi
+    done
+
+    if [ "$common_part" = / ]; then
+        # special case for root (no common path)
+        result="$result/"
+    fi
+
+    # since we now have identified the common part,
+    # compute the non-common part
+    forward_part="${target#"$common_part"}"
+
+    # and now stick all parts together
+    if [ -n "$result" ] && [ -n "$forward_part" ]; then
+        result="$result$forward_part"
+    elif [ -n "$forward_part" ]; then
+        # extra slash removal
+        result="${forward_part#?}"
+    fi
+
+    printf '%s\n' "$result"
+
+}
+
 function link_path {
+
+    mkdir -p "$3"
     rm -f "$3/$2"
-    log "  * linking $1/$2 to $3/$2"
-    ln -s "$1/$2" "$3/$2"
+
+    link_folder="$3"
+    target_folder="$1"
+
+    relpath="$(calculate_relative_path "$link_folder" "$target_folder")"
+
+    log "  * linking $link_folder/$2 to $relpath/$2"
+    ln -s "$relpath/$2" "$link_folder/$2"
+
+    # log "  * linking $1/$2 to $3/$2"
+    # ln -s "$1/$2" "$3/$2"
 }
 
 function link_path_to_local_bin {
@@ -453,6 +511,7 @@ function link_conda_executables {
     for pkgName in conda activate deactivate
     do
         link_path_to_local_bin "$INAUGURATE_CONDA_PATH" "$pkgName"
+        link_path_to_inaugurate_bin "$INAUGURATE_CONDA_PATH" "$pkgName"
     done
     LINKED_CONDA_EXECUTABLES=true
 }
@@ -470,6 +529,7 @@ function link_required_executables {
     for pkgName in $2
     do
         link_path_to_local_bin "$1" "$pkgName"
+        link_path_to_inaugurate_bin "$1" "$pkgName"
     done
 }
 
