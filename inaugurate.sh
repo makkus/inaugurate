@@ -506,6 +506,16 @@ function link_path_to_inaugurate_bin {
     link_path "$1" "$2" "$INAUGURATE_BIN_PATH"
 }
 
+function make_conda_env_links_relative {
+
+    for exeName in conda activate deactivate
+    do
+        log "  * changing absolute to relative link for conda executable: $CONDA_INAUGURATE_ENV_PATH/bin/$exeName"
+        rm "$CONDA_INAUGURATE_ENV_PATH/bin/$exeName"
+        ln -s "../../../bin/$exeName" "$CONDA_INAUGURATE_ENV_PATH/bin/$exeName"
+    done
+}
+
 function link_conda_executables {
 
     for pkgName in conda activate deactivate
@@ -605,6 +615,7 @@ function install_inaugurate_non_root_conda {
     link_conda_executables
     link_required_executables "$CONDA_INAUGURATE_ENV_PATH/bin" "$EXECUTABLES_TO_LINK"
     link_extra_executables "$CONDA_INAUGURATE_ENV_PATH/bin" "$EXTRA_EXECUTABLES"
+    make_conda_env_links_relative
 }
 
 function install_conda_non_root {
@@ -682,8 +693,8 @@ EOF
 
 ############# Start script ##################
 
-#export PATH="$LOCAL_BIN_PATH:$INAUGURATE_BIN_PATH:$PATH"
-export PATH="$LOCAL_BIN_PATH:$PATH"
+export PATH="$LOCAL_BIN_PATH:$INAUGURATE_BIN_PATH:$PATH"
+#export PATH="$LOCAL_BIN_PATH:$PATH"
 
 execute_log "echo Starting inaugurate bootstrap: `date`" "Error"
 
