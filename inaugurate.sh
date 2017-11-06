@@ -242,7 +242,7 @@ INAUGURATE_CONDA_PYTHON_VERSION="2.7"
 INAUGURATE_CONDA_DEPENDENCIES="pip cryptography pycrypto git"
 INAUGURATE_CONDA_EXECUTABLES_TO_LINK="$PROFILE_NAME"
 # deb
-INAUGURATE_DEB_DEPENDENCIES="build-essential git python-dev python-virtualenv libssl-dev libffi-dev"
+INAUGURATE_DEB_DEPENDENCIES="build-essential git python-dev python-virtualenv virtualenv libssl-dev libffi-dev"
 # rpm
 INAUGURATE_RPM_DEPENDENCIES="wget git python-virtualenv openssl-devel gcc libffi-devel python-devel openssl-devel"
 # pip requirements
