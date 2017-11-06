@@ -753,7 +753,7 @@ if ! command_exists_only_user_visible $EXECUTABLE_NAME; then
         EXECUTABLES_TO_LINK="freckles frecklecute freckelize freckfreckfreck"
         EXTRA_EXECUTABLES="nsbl nsbl-tasks nsbl-playbook ansible ansible-playbook ansible-galaxy git"
         # deb
-        DEB_DEPENDENCIES="curl build-essential git python-dev python-virtualenv libssl-dev libffi-dev"
+        DEB_DEPENDENCIES="curl build-essential git python-dev python-virtualenv virtualenv libssl-dev libffi-dev"
         # rpm
         RPM_DEPENDENCIES="wget git python-virtualenv openssl-devel gcc libffi-devel python-devel"
         # pip requirements
