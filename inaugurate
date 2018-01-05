@@ -1,0 +1,837 @@
+#!/usr/bin/env bash
+#
+# -------------------------------------------------------
+#
+#      _                                         _
+#     (_)                                       | |
+#      _ _ __   __ _ _   _  __ _ _   _ _ __ __ _| |_ ___
+#     | | '_ \ / _` | | | |/ _` | | | | '__/ _` | __/ _ \
+#     | | | | | (_| | |_| | (_| | |_| | | | (_| | ||  __/
+#     |_|_| |_|\__,_|\__,_|\__, |\__,_|_|  \__,_|\__\___|
+#                           __/ |
+#                          |___/
+#
+#
+#
+#                     Copyright 2017 by Markus Binsteiner
+#                                    licensed under GPLv3
+#
+#
+# -------------------------------------------------------
+#
+# for more information please visit: https://inaugurate.io
+#
+#
+#
+# ============
+# script start
+# ============
+#
+# settings to control inaugurates behaviour (default is false or 'not set' for all those)
+# ---------------------------------------------------------------------------------------
+#
+# NO_ADD_PATH=true      # if set to true, ~/.local/bin won't be added to .profile
+# NO_EXEC=true          # if set to true, the 'inaugurated' application won't be run
+#
+# SELF_DESTRUCT=true    # if set to true, after the 'inaugurated' application is run, the folder(s)
+#                       # used in the installation process are deleted again. the system packages
+#                       # used in that process (if using elevated permissions) as well as everything
+#                       # installed in the run will still be present
+#
+# PIP_INDEX_URL=""      # if $PIP_INDEX_URL is set, a $HOME/.pip/pip.conf file is created
+#                       # and the provided index_url is set (only if the file doesn't exists yet)
+#
+# CONDA_CHANNEL=""      # if $CONDA_CHANNEL is set, a $HOME/.condarc file is created and the
+#                       # provided channel is set (only if the file doesn't exist yet)
+#
+# CHINA=true            # this is a convenience setting, if $CHINA is set to true, inaugurate sets
+#                       # both pip and conda to point to mirrors within China, and it tries to also
+#                       # change to Debian mirrors in China (if applicable -- run with elevated
+#                       # permissions and on a Debian platform)
+#
+
+# TEMPLATE_PLACEHOLDER
+
+# Exit codes:
+# 2: application configuration error
+# 3: execution error somewhere in the bootstrap pipeline
+# 6: platform or package manager not supported
+
+INAUGURATE_VERSION=1
+
+if [ ! -z "$INAUGURATE_DEBUG" ]; then
+    DEBUG=true
+fi
+if [ "$DEBUG" = true ]; then
+    set -x
+fi
+
+# prepare some settings
+if [ "$CHINA" = true ]; then
+  PIP_INDEX_URL="https://pypi.tuna.tsinghua.edu.cn/simple"
+  CONDA_CHANNEL="https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/free/"
+fi
+
+trap 'error_exit "Bootstrapping interrupted, exiting...; exit"' SIGHUP SIGINT SIGTERM
+
+# determine whether we run with sudo, or not
+if [ "$EUID" != 0 ]; then
+    root_permissions=false
+    INAUGURATE_USER="$USER"
+else
+    root_permissions=true
+    if [ -z "$SUDO_USER" ]; then
+        if [ ! -z "$USER" ]; then
+            INAUGURATE_USER="$USER"
+        else
+            INAUGURATE_USER="root"
+        fi
+    else
+        INAUGURATE_USER="$SUDO_USER"
+    fi
+fi
+
+# General variables
+PROGNAME="inaugurate"
+
+INAUGURATE_USER_HOME="`eval echo ~$INAUGURATE_USER`"
+INAUGURATE_BASE_DIR="$INAUGURATE_USER_HOME/.inaugurate"
+BASE_DIR="$INAUGURATE_USER_HOME/.local"
+
+INAUGURATE_OPT="$BASE_DIR/inaugurate"
+INSTALL_LOG_DIR="$INAUGURATE_OPT/logs/"
+
+TEMP_DIR="$INAUGURATE_OPT/tmp/"
+
+SCRIPT_LOG_FILE="$INSTALL_LOG_DIR/install_$(date +"%Y%m%d%H%M%S").log"
+mkdir -p "$INSTALL_LOG_DIR"
+touch "$SCRIPT_LOG_FILE"
+chmod 700 "$SCRIPT_LOG_FILE"
+
+LOCAL_BIN_PATH="$BASE_DIR/bin"
+INAUGURATE_BIN_PATH="$INAUGURATE_OPT/bin"
+function error_exit
+{
+
+    #	----------------------------------------------------------------
+    #	Function for exit due to fatal program error
+    #		Accepts 1 argument:
+    #			string containing descriptive error message
+    #	----------------------------------------------------------------
+
+
+	  error_output "${PROGNAME}: ${1:-"Unknown Error"}, check log file for details -> $SCRIPT_LOG_FILE" 1>&2
+	  exit 1
+}
+
+# echo "ROOT_PERMISSIONS: $root_permissions"
+# echo "INAUGURATE_USER: $INAUGURATE_USER"
+
+if [ ! -z "$1" ]; then
+    PROFILE_NAME=`basename "$1"`
+else
+    PROFILE_NAME="inaugurate"
+fi
+
+# functions to read (remote) config
+function log () {
+    echo "    .. $@" >> "$SCRIPT_LOG_FILE"
+}
+
+function output() {
+    log "$@"
+    if ! [ "${QUIET}" = true ]; then
+        echo "$@"
+    fi
+}
+
+function error_output() {
+    log $1
+    (>&2 echo "$@")
+}
+
+function command_exists {
+    PATH="$PATH:$LOCAL_BIN_PATH:$INAUGURATE_BIN_PATH" type "$1" > /dev/null 2>&1 ;
+}
+
+function command_exists_only_user_visible {
+    PATH="$PATH:$LOCAL_BIN_PATH" type "$1" > /dev/null 2>&1 ;
+}
+
+function execute_log {
+    eval "$1" >> "$SCRIPT_LOG_FILE" 2>&1 || error_exit "$2"
+}
+
+function download {
+    {
+        if command_exists wget; then
+            execute_log "wget -O $2 $1" "Could not download $1 using wget"
+        elif command_exists curl; then
+            execute_log "curl -o $2 $1" "Could not download $1 using curl"
+        else
+            error_output "Could not find 'wget' nor 'curl' to download files. Exiting..."
+            exit 1
+        fi
+    } >> "$SCRIPT_LOG_FILE"
+}
+
+read_remote() {
+
+    if command_exists wget; then
+        wget -qO- "$1"
+    elif command_exists curl; then
+        curl -s "$1"
+    else
+        error_output "Could not find 'wget' nor 'curl' to download files. Exiting..."
+        exit 1
+    fi
+
+}
+
+config_read() {
+    (echo "$1" | grep -E "^${2}=" -m 1 2>/dev/null || echo "VAR=__UNDEFINED__") | head -n 1 | cut -d '=' -f 2-;
+}
+
+config_get() {
+
+
+    INAUGURATE_LOCAL_STORE="$INAUGURATE_BASE_DIR/local-store"
+
+    local_app="$INAUGURATE_LOCAL_STORE/$1"
+
+    if [ -e "$1" ]; then
+        app_name=$(basename "$1")
+        CONFIG=$(cat "$1")
+
+        log "Read local file config:"
+        log "$CONFIG"
+    elif [ -e "$local_app" ]; then
+      CONFIG=$(cat $local_app)
+
+      log "Read local store config:"
+      log "$CONFIG"
+    else
+      url="https://raw.githubusercontent.com/inaugurate/store/master/$1"
+      output "  * reading: $url"
+      CONFIG="$(read_remote $url)"
+
+      log "Read remote store config:"
+      log "$CONFIG"
+    fi
+
+    #TODO: user confirmation after display?
+
+    CONDA_PYTHON_VERSION="$(config_read "${CONFIG}" "CONDA_PYTHON_VERSION")";
+    CONDA_DEPENDENCIES="$(config_read "${CONFIG}" "CONDA_DEPENDENCIES")";
+    EXECUTABLES_TO_LINK="$(config_read "${CONFIG}" "EXECUTABLES_TO_LINK")";
+    EXTRA_EXECUTABLES="$(config_read "${CONFIG}" "EXTRA_EXECUTABLES")";
+    DEB_DEPENDENCIES="$(config_read "${CONFIG}" "DEB_DEPENDENCIES")";
+    RPM_DEPENDENCIES="$(config_read "${CONFIG}" "RPM_DEPENDENCIES")";
+    PIP_DEPENDENCIES="$(config_read "${CONFIG}" "PIP_DEPENDENCIES")";
+    ENV_NAME="$(config_read "${CONFIG}" "ENV_NAME")";
+    if [ "${ENV_NAME}" = "__UNDEFINED__" ]; then
+        ENV_NAME="$EXECUTABLE_NAME"
+    fi
+
+}
+
+
+# inaugurate vars
+# conda
+INAUGURATE_CONDA_PYTHON_VERSION="2.7"
+INAUGURATE_CONDA_DEPENDENCIES="pip cryptography pycrypto git"
+INAUGURATE_CONDA_EXECUTABLES_TO_LINK="$PROFILE_NAME"
+# deb
+INAUGURATE_DEB_DEPENDENCIES="build-essential git python-dev python-virtualenv virtualenv libssl-dev libffi-dev"
+# rpm
+INAUGURATE_RPM_DEPENDENCIES="wget git python-virtualenv openssl-devel gcc libffi-devel python-devel openssl-devel"
+# pip requirements
+INAUGURATE_PIP_DEPENDENCIES="inaugurate"
+
+
+# conda related variables
+CONDA_DOWNLOAD_URL_LINUX="https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh"
+CONDA_DOWNLOAD_URL_MAC="https://repo.continuum.io/miniconda/Miniconda2-latest-MacOSX-x86_64.sh"
+CONDA_BASE_DIR="$BASE_DIR/inaugurate/conda"
+INAUGURATE_CONDA_PATH="$CONDA_BASE_DIR/bin"
+CONDA_ROOT_EXE="$CONDA_BASE_DIR/bin/conda"
+
+function install_inaugurate {
+    if [ "$1" = true ]; then
+        install_inaugurate_root
+    else
+        install_inaugurate_non_root_conda
+    fi
+}
+
+#TODO: exception handline for this
+function create_virtualenv {
+    {
+    su "$INAUGURATE_USER" <<EOF
+set +e
+mkdir -p "$INAUGURATE_OPT"
+if [ ! -e "$VIRTUALENV_DIR" ]; then
+  virtualenv --system-site-packages "$VIRTUALENV_DIR"
+fi
+source "$VIRTUALENV_DIR/bin/activate"
+pip install --upgrade pip
+pip install --upgrade setuptools wheel
+pip install --upgrade requests
+#set -e
+EOF
+    } >> "$SCRIPT_LOG_FILE" 2>&1 || error_exit "Could not create '$VENV_NAME' virtual environment, check log file for details: $SCRIPT_LOG_FILE"
+}
+
+#TODO: exception handling for this
+#TODO: check whether package already installed? or overkill? -- yeah, probably
+function install_package_in_virtualenv {
+    output "    -> installing '$1' into venv: $VIRTUALENV_DIR"
+    {
+        su "$INAUGURATE_USER" <<EOF
+set +e
+source "$VIRTUALENV_DIR/bin/activate"
+pip install --upgrade "$1" --upgrade-strategy only-if-needed
+#set -e
+EOF
+    } >> "$SCRIPT_LOG_FILE" 2>&1 || error_exit "Could not create '$VENV_NAME' virtual environment, check log file for details: $SCRIPT_LOG_FILE"
+}
+
+
+function install_inaugurate_deb {
+    output "  * Debian-based system detected"
+    output "  * updating apt cache"
+    # sometimes, on a new debian machine, the first (and even 2nd) 'apt-get update' fails...
+    execute_log "apt-get update || apt-get update" "Could not update apt repository cache"
+    output "  * installing dependencies: $DEB_DEPENDENCIES"
+    execute_log "apt-get install -y $DEB_DEPENDENCIES" "Error installing dependencies via apt."
+    output "  * creating '$VENV_NAME' virtual environment"
+    create_virtualenv
+    for pkgName in $PIP_DEPENDENCIES
+    do
+        install_package_in_virtualenv $pkgName
+    done
+    link_required_executables "$VIRTUALENV_PATH" "$EXECUTABLES_TO_LINK"
+    link_extra_executables "$VIRTUALENV_PATH" "$EXTRA_EXECUTABLES"
+    #export PATH="$PATH:$VIRTUALENV_PATH"
+}
+
+function install_inaugurate_rpm {
+    output "  * RedHat-based system detected."
+    output "  * installing dependencies: $RPM_DEPENDENCIES"
+    #execute_log "yum install -y epel-release" "Error installing epel-release via yum."
+    execute_log "yum install -y $RPM_DEPENDENCIES" "Error installing dependencies via yum."
+    output "  * creating '$VENV_NAME' virtual environment"
+    create_virtualenv
+    for pkgName in $PIP_DEPENDENCIES
+    do
+        install_package_in_virtualenv $pkgName
+    done
+    link_required_executables "$VIRTUALENV_PATH" "$EXECUTABLES_TO_LINK"
+    link_extra_executables "$VIRTUALENV_PATH" "$EXTRA_EXECUTABLES"
+    #export PATH="$PATH:$VIRTUALENV_PATH"
+}
+
+function install_inaugurate_dnf {
+    output "  * RedHat-based system with 'dnf' detected."
+    output "  * installing dependencies: yum python-dnf $RPM_DEPENDENCIES"
+    execute_log "dnf install -y yum python-dnf $RPM_DEPENDENCIES" "Error installing dependencies via yum."
+    output "  * creating '$VENV_NAME' virtual environment"
+    create_virtualenv
+    for pkgName in $PIP_DEPENDENCIES
+    do
+        install_package_in_virtualenv $pkgName
+    done
+    link_required_executables "$VIRTUALENV_PATH" "$EXECUTABLES_TO_LINK"
+    link_extra_executables "$VIRTUALENV_PATH" "$EXTRA_EXECUTABLES"
+    #export PATH="$PATH:$VIRTUALENV_PATH"
+}
+
+function install_commandlinetools {
+    g++ --version > /dev/null 2>&1
+    if [ ! $? -eq 0 ]; then
+        output "  * installing CommandLineTools"
+        output "    -> looking up package name and version... "
+        sudo -u "$INAUGURATE_USER" touch /tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress
+        log "Finding command-line-tools name"
+        PROD=$(softwareupdate -l |
+               grep "\*.*Command Line" |
+               head -n 1 | awk -F"*" '{print $2}' |
+               sed -e 's/^ *//' |
+               tr -d '\n')
+        output "    -> installing: $PROD..."
+        execute_log "sudo -u \"$INAUGURATE_USER\" softwareupdate -i \"$PROD\" " "Could not install $PROD"
+        rm /tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress
+    else
+        output "  - 'xcode' already present, skipping"
+    fi
+
+}
+
+function install_inaugurate_mac_root {
+    output '  * MacOS X-based system detected.'
+    install_commandlinetools
+    output "  * installing pip & virtualenv"
+    if ! command_exists pip; then
+        execute_log "easy_install pip" "Could not install pip"
+    fi
+    if ! command_exists virtualenv; then
+        execute_log "pip install virtualenv" "Could not install virtualenv via pip"
+    fi
+
+    output "  * creating '$VENV_NAME' virtual environment"
+    create_virtualenv
+    for pkgName in $PIP_DEPENDENCIES
+    do
+        install_package_in_virtualenv $pkgName
+    done
+    link_required_executables "$VIRTUALENV_PATH" "$EXECUTABLES_TO_LINK"
+    link_extra_executables "$VIRTUALENV_PATH" "$EXTRA_EXECUTABLES"
+    #export PATH="$PATH:$VIRTUALENV_PATH"
+}
+
+function install_inaugurate_linux_root {
+    YUM_CMD=$(which yum 2> /dev/null)
+    APT_GET_CMD=$(which apt-get 2> /dev/null)
+    DNF_CMD=$(which dnf 2> /dev/null)
+    if [[ ! -z $DNF_CMD ]]; then
+        install_inaugurate_dnf
+    elif [[ ! -z $YUM_CMD ]]; then
+        install_inaugurate_rpm
+    elif [[ ! -z $APT_GET_CMD ]]; then
+        install_inaugurate_deb
+    else
+        error_output "Could not find supported package manager. Exiting..."
+        exit 6
+    fi
+}
+
+function install_inaugurate_root {
+
+    output "  * elevated permissions detected, using sytem package manager to install dependencies"
+
+    # figure out which os we are running
+    if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        install_inaugurate_linux_root
+    elif [[ "$OSTYPE" == "darwin"* ]]; then
+        install_inaugurate_mac_root
+    elif [[ "$OSTYPE" == "cygwin" ]]; then
+        # POSIX compatibility layer and Linux environment emulation for Windows
+        error_output "Sorry, Cygwin platform is not supported (at the moment, anyway). Exiting..."
+        exit 6
+    elif [[ "$OSTYPE" == "msys" ]]; then
+        # Lightweight shell and GNU utilities compiled for Windows (part of MinGW)
+        error_output "Sorry, msys/MinGW platform is not supported (at the moment, anyway). Exiting..."
+        exit 6
+    elif [[ "$OSTYPE" == "win32" ]]; then
+        error_output "Sorry, win32 platform is not supported (at the moment, anyway). Exiting..."
+        exit 6
+    elif [[ "$OSTYPE" == "freebsd"* ]]; then
+        error_output "Sorry, freebsd platform is not supported (at the moment, anyway). Exiting..."
+        exit 6
+    else
+        error_output "Could not figure out which platform I'm running on. Exiting..."
+        exit 6
+    fi
+}
+
+function calculate_relative_path {
+    # from: https://unix.stackexchange.com/questions/85060/getting-relative-links-between-two-paths
+    # both $1 and $2 are absolute paths beginning with /
+    # $1 must be a canonical path; that is none of its directory
+    # components may be ".", ".." or a symbolic link
+    #
+    # returns relative path to $2/$target from $1/$source
+
+    source=$1
+    target=$2
+
+    common_part=$source
+    result=""
+
+    while [ "${target#"$common_part"}" = "$target" ]; do
+        # no match, means that candidate common part is not correct
+        # go up one level (reduce common part)
+        common_part=$(dirname "$common_part")
+        # and record that we went back, with correct / handling
+        if [ -z "$result" ]; then
+            result=".."
+        else
+            result="../$result"
+        fi
+    done
+
+    if [ "$common_part" = / ]; then
+        # special case for root (no common path)
+        result="$result/"
+    fi
+
+    # since we now have identified the common part,
+    # compute the non-common part
+    forward_part="${target#"$common_part"}"
+
+    # and now stick all parts together
+    if [ -n "$result" ] && [ -n "$forward_part" ]; then
+        result="$result$forward_part"
+    elif [ -n "$forward_part" ]; then
+        # extra slash removal
+        result="${forward_part#?}"
+    fi
+
+    printf '%s\n' "$result"
+
+}
+
+function link_path {
+
+    mkdir -p "$3"
+    rm -f "$3/$2"
+
+    link_folder="$3"
+    target_folder="$1"
+
+    relpath="$(calculate_relative_path "$link_folder" "$target_folder")"
+
+    log "  * linking $link_folder/$2 to $relpath/$2"
+    ln -s "$relpath/$2" "$link_folder/$2"
+
+    # log "  * linking $1/$2 to $3/$2"
+    # ln -s "$1/$2" "$3/$2"
+}
+
+function link_path_to_local_bin {
+    link_path "$1" "$2" "$LOCAL_BIN_PATH"
+}
+
+function link_path_to_inaugurate_bin {
+    link_path "$1" "$2" "$INAUGURATE_BIN_PATH"
+}
+
+function make_conda_env_links_relative {
+
+    for exeName in conda activate deactivate
+    do
+        log "  * changing absolute to relative link for conda executable: $CONDA_INAUGURATE_ENV_PATH/bin/$exeName"
+        rm "$CONDA_INAUGURATE_ENV_PATH/bin/$exeName"
+        ln -s "../../../bin/$exeName" "$CONDA_INAUGURATE_ENV_PATH/bin/$exeName"
+    done
+}
+
+function link_conda_executables {
+
+    for pkgName in conda activate deactivate
+    do
+        link_path_to_local_bin "$INAUGURATE_CONDA_PATH" "$pkgName"
+        link_path_to_inaugurate_bin "$INAUGURATE_CONDA_PATH" "$pkgName"
+    done
+    LINKED_CONDA_EXECUTABLES=true
+}
+
+function remove_conda_executables {
+
+    for pkgName in conda activate deactivate
+    do
+        rm -f "$LOCAL_BIN_PATH/$pkgName"
+    done
+}
+
+function link_required_executables {
+
+    for pkgName in $2
+    do
+        link_path_to_local_bin "$1" "$pkgName"
+        link_path_to_inaugurate_bin "$1" "$pkgName"
+    done
+}
+
+function remove_local_bin_links {
+
+    for pkg_name in $1
+    do
+        rm -f "$LOCAL_BIN_PATH/$pkg_name"
+    done
+}
+
+function link_extra_executables {
+
+    for pkgName in $2
+    do
+        link_path_to_inaugurate_bin "$1" "$pkgName"
+    done
+}
+
+function install_inaugurate_non_root_conda {
+
+    output "  * no elevated permissions detected, using conda package manager"
+
+    if [ ! -f "$CONDA_ROOT_EXE" ]; then
+        install_conda_non_root
+    else
+        output "  - 'conda' already present, not installing again"
+        #export PATH="$INAUGURATE_CONDA_PATH:$PATH"
+    fi
+
+    if [ ! -e "$CONDA_INAUGURATE_ENV_EXE" ]; then
+        output "  * creating '$CONDA_ENV_NAME' conda environment"
+        execute_log "$CONDA_ROOT_EXE create -y --name $CONDA_ENV_NAME python=$CONDA_PYTHON_VERSION" "Could not create conda environment."
+    else
+        output "  - '$CONDA_ENV_NAME' conda environment already exists, not creating again"
+    fi
+
+    packages=`$CONDA_ROOT_EXE list --name "$CONDA_ENV_NAME"`
+
+    # check python in conda environment
+     if echo "$packages" | grep -q "^python\s*$CONDA_PYTHON_VERSION"; then
+       output "    -> python already present in conda environment '$CONDA_ENV_NAME'"
+     else
+       output "    -> installing python (version $CONDA_PYTHON_VERSION) into conda environment '$CONDA_ENV_NAME'"
+       execute_log "$CONDA_ROOT_EXE install --name $CONDA_ENV_NAME -y python=$CONDA_PYTHON_VERSION" "Could not install python in conda environment."
+    fi
+
+    # check conda dependencies
+    for pkgName in $CONDA_DEPENDENCIES
+    do
+        if echo $packages | grep -q "$pkgName"; then
+            output "    -> package '$pkgName' already present in conda environment '$CONDA_ENV_NAME'"
+         else
+            output "    -> installing $pkgName into conda environment '$CONDA_ENV_NAME'"
+            execute_log "$CONDA_ROOT_EXE install --name $CONDA_ENV_NAME -y $pkgName" "Could not install $pkgName in conda environment."
+         fi
+    done
+
+    execute_log "source $INAUGURATE_CONDA_PATH/activate $CONDA_ENV_NAME" "Could not activate '$CONDA_ENV_NAME' conda environment"
+
+    for pkgName in $PIP_DEPENDENCIES
+    do
+        modules=`$INAUGURATE_CONDA_PATH/pydoc modules`
+        if echo "$modules" | grep -q "$pkgName" ; then
+           output "    -> python package '$pkgName' already present in conda environment '$CONDA_ENV_NAME'"
+        else
+            output "    -> installing python package '$pkgName' into conda environment '$CONDA_ENV_NAME'"
+            execute_log "pip install -U $pkgName --upgrade-strategy only-if-needed" "Could not install $pkgName in conda environment"
+        fi
+
+    done
+    execute_log "source deactivate $CONDA_ENV_NAME" "Could not deactivate '$CONDA_ENV_NAME' conda environment"
+    link_conda_executables
+    link_required_executables "$CONDA_INAUGURATE_ENV_PATH/bin" "$EXECUTABLES_TO_LINK"
+    link_extra_executables "$CONDA_INAUGURATE_ENV_PATH/bin" "$EXTRA_EXECUTABLES"
+    make_conda_env_links_relative
+}
+
+function install_conda_non_root {
+    output "  * bootstrapping conda package manager"
+    {
+    cd "$TEMP_DIR"
+    if [[ "$OSTYPE" == "linux-gnu" ]]; then
+        download "$CONDA_DOWNLOAD_URL_LINUX" "$TEMP_DIR/miniconda.sh"
+    elif [[ "$OSTYPE" == "darwin"* ]]; then
+        download "$CONDA_DOWNLOAD_URL_MAC" "$TEMP_DIR/miniconda.sh"
+    fi
+    } >> "$SCRIPT_LOG_FILE" 2>&1
+    mkdir -p "$INAUGURATE_OPT"
+    mkdir -p "$INAUGURATE_BASE_DIR"
+
+    chown -R "$INAUGURATE_USER" "$INAUGURATE_BASE_DIR"
+
+    output "  * installing conda"
+    {
+    bash "$TEMP_DIR/miniconda.sh" -b -p "$CONDA_BASE_DIR"
+    #export PATH="$INAUGURATE_CONDA_PATH:$PATH"
+    cd "$HOME"
+    rm -rf "$TEMP_DIR"
+    } >> "$SCRIPT_LOG_FILE" 2>&1
+}
+
+function add_inaugurate_path {
+    if ! grep -q 'add inaugurate environment' "$INAUGURATE_USER_HOME/.profile"  > /dev/null 2>&1 ; then
+       cat <<"EOF" >> "$INAUGURATE_USER_HOME/.profile"
+
+# add inaugurate environment
+LOCAL_BIN_PATH="$HOME/.local/bin"
+if [ -d "$LOCAL_BIN_PATH" ]; then
+    PATH="$PATH:$LOCAL_BIN_PATH"
+fi
+EOF
+
+       output "Added path to inaugurate bin dir to .profile. You'll need to logout and login again to see the effect. Or you can just execute:"
+       output ""
+       output "   source ~/.profile"
+    fi
+
+    if [ -e "$INAUGURATE_USER_HOME/.bash_profile" ] && ! grep -q 'add inaugurate environment' "$INAUGURATE_USER_HOME/.bash_profile" ; then
+        cat <<"EOF" >> "$INAUGURATE_USER_HOME/.bash_profile"
+
+# add inaugurate environment
+LOCAL_BIN_PATH="$HOME/.local/bin"
+if [ -d "$LOCAL_BIN_PATH" ]; then
+    PATH="$PATH:$LOCAL_BIN_PATH"
+fi
+EOF
+
+        output ""
+        output "Added path to inaugurate bin dir to .bash_profile. You'll need to logout and login again to see the effect. Or you can just execute:"
+        output ""
+        output "   source ~/.bash_profile"
+    fi
+
+    if [ -e "$INAUGURATE_USER_HOME/.zprofile" ] && ! grep -q 'add inaugurate environment' "$INAUGURATE_USER_HOME/.zprofile" ; then
+        cat <<"EOF" >> "$INAUGURATE_USER_HOME/.zprofile"
+
+# add inaugurate environment
+LOCAL_BIN_PATH="$HOME/.local/bin"
+if [ -d "$LOCAL_BIN_PATH" ]; then
+    PATH="$PATH:$LOCAL_BIN_PATH"
+fi
+EOF
+
+        output ""
+        output "Added path to inaugurate bin dir to .zprofile. You'll need to logout and login again to see the effect. Or you can just execute:"
+        output ""
+        output "   source ~/.zprofile"
+    fi
+}
+
+############# Start script ##################
+
+export PATH="$LOCAL_BIN_PATH:$INAUGURATE_BIN_PATH:$PATH"
+#export PATH="$LOCAL_BIN_PATH:$PATH"
+
+execute_log "echo Starting inaugurate bootstrap: `date`" "Error"
+
+# prepare pip, conda and apt mirrors if necessary
+if [ "$CHINA" = true ]; then
+    CONDA_DOWNLOAD_URL_LINUX="https://mirrors.tuna.tsinghua.edu.cn/anaconda/miniconda/Miniconda2-latest-Linux-x86_64.sh"
+    CONDA_DOWNLOAD_URL_MAC="https://mirrors.tuna.tsinghua.edu.cn/anaconda/miniconda/Miniconda2-latest-MacOSX-x86_64.sh"
+fi
+
+if [ -n "$PIP_INDEX_URL" ] && [ ! -e "$INAUGURATE_USER_HOME/.pip/pip.conf" ]; then
+    output ""
+    output "* setting pip index to: $PIP_INDEX_URL"
+    mkdir -p "$INAUGURATE_USER_HOME/.pip"
+    echo "[global]" > "$INAUGURATE_USER_HOME/.pip/pip.conf"
+    echo "index-url = $PIP_INDEX_URL" >> "$INAUGURATE_USER_HOME/.pip/pip.conf"
+fi
+
+if [ -n "$CONDA_CHANNEL" ] && [ ! -e "$INAUGURATE_USER_HOME/.condarc" ]; then
+    output ""
+    output "* setting conda channel to: $CONDA_CHANNEL"
+    echo "channels:" > "$INAUGURATE_USER_HOME/.condarc"
+    echo "  - $CONDA_CHANNEL" >> "$INAUGURATE_USER_HOME/.condarc"
+    echo "show_channel_urls: true" >> "$INAUGURATE_USER_HOME/.condarc"
+fi
+
+if [[ "$CHINA" = true && ( "$root_permissions" = true || "$INAUGURATE_USER" == "root" ) ]]; then
+    # check if Debian
+    APT_GET_CMD=$(which apt-get 2> /dev/null)
+    if [[ ! -z $APT_GET_CMD ]]; then
+       output ""
+       output "setting apt sources to ftp.cn.debian.org mirror"
+       if [ ! -e /etc/apt/sources.list.bak.inaugurate ]; then
+            cp /etc/apt/sources.list /etc/apt/sources.list.bak.inaugurate
+       fi
+       sed -i 's/deb.debian.org/ftp.cn.debian.org/g' /etc/apt/sources.list
+    fi
+fi
+
+# check if command is already in the path, if it is, assume everything is bootstrapped
+EXECUTABLE_NAME="$PROFILE_NAME"
+
+if ! command_exists_only_user_visible $EXECUTABLE_NAME; then
+
+    output ""
+    output "'$EXECUTABLE_NAME' not found in path, inaugurating..."
+    output ""
+
+    # profile dependent
+    VENV_NAME="$PROFILE_NAME"
+    CONDA_ENV_NAME="$PROFILE_NAME"
+
+    if [[ "$PROFILE_NAME" == "freckelize" || "$PROFILE_NAME" == "frecklecute" || "$PROFILE_NAME" == "freckles" || "$PROFILE_NAME" == "freckfreckfreck" ]]; then
+        # conda
+        CONDA_PYTHON_VERSION="2.7"
+        CONDA_DEPENDENCIES="pip cryptography pycrypto git"
+        EXECUTABLES_TO_LINK="freckles frecklecute freckelize freckfreckfreck"
+        EXTRA_EXECUTABLES="nsbl nsbl-tasks nsbl-playbook ansible ansible-playbook ansible-galaxy git"
+        # deb
+        DEB_DEPENDENCIES="curl build-essential git python-dev python-virtualenv virtualenv libssl-dev libffi-dev"
+        # rpm
+        RPM_DEPENDENCIES="wget git python-virtualenv openssl-devel gcc libffi-devel python-devel"
+        # pip requirements
+        PIP_DEPENDENCIES="freckles"
+        ENV_NAME="inaugurate"
+    else
+        config_get "$PROFILE_NAME"
+    fi
+    CONDA_ENV_NAME="$ENV_NAME"
+    VENV_NAME="$ENV_NAME"
+    CONDA_INAUGURATE_ENV_PATH="$CONDA_BASE_DIR/envs/$CONDA_ENV_NAME"
+    CONDA_INAUGURATE_ENV_EXE="$CONDA_INAUGURATE_ENV_PATH/bin/conda"
+
+    # python/virtualenv related variables
+    VIRTUALENV_DIR="$INAUGURATE_OPT/virtualenvs/$VENV_NAME"
+    VIRTUALENV_PATH="$VIRTUALENV_DIR/bin"
+
+
+    mkdir -p "$TEMP_DIR"
+    mkdir -p "$LOCAL_BIN_PATH"
+    mkdir -p "$INAUGURATE_BIN_PATH"
+    if [ $root_permissions = true ]; then
+        chown -R "$INAUGURATE_USER" "$BASE_DIR"
+        chown -R "$INAUGURATE_USER" "$TEMP_DIR"
+        chown -R "$INAUGURATE_USER" "$LOCAL_BIN_PATH"
+        chown -R "$INAUGURATE_USER" "$INAUGURATE_BIN_PATH"
+        chown -R "$INAUGURATE_USER" "$INAUGURATE_OPT"
+    fi
+
+    install_inaugurate "$root_permissions"
+    output ""
+
+    if [[ ! "$SELF_DESTRUCT" = true && ! "$NO_ADD_PATH" = true ]]; then
+        add_inaugurate_path
+    fi
+
+    #inaugurate "$1"
+
+    shift
+    output ""
+    if [ "$NO_EXEC" = true ]; then
+        output "Boostrapping finished, NO_EXEC flag set, so not executing '$EXECUTABLE_NAME', exiting instead..."
+        exit 0
+    else
+        output "Bootstrapping finished, now attempting to run '$EXECUTABLE_NAME' (like so: '$EXECUTABLE_NAME $@')"
+        output ""
+        output "========================================================================"
+        output ""
+    fi
+else
+    if [ "$NO_EXEC" = true ]; then
+        output "NO_EXEC flag set, so not executing '$EXECUTABLE_NAME'. Exiting..."
+        exit 0
+    else
+        shift
+    fi
+fi
+
+execute_log "echo Finished '$PROFILE_NAME' bootstrap: `date`" "Error"
+
+#echo "INAUGURATE_PATH: $LOCAL_BIN_PATH"
+
+if [ "$root_permissions" = true ] && [ "$INAUGURATE_USER" != "root" ]; then
+    exec sudo -u "$INAUGURATE_USER" "$LOCAL_BIN_PATH/$EXECUTABLE_NAME" "$@"
+else
+    PATH="$PATH:$LOCAL_BIN_PATH:$INAUGURATE_BIN_PATH" "$EXECUTABLE_NAME" "$@"
+fi
+
+if [ "$SELF_DESTRUCT" = true ]; then
+    output ""
+    output "  !!!  SELF_DESTRUCT flag set, deleting inaugurate-created folders and created links...  !!!"
+    remove_local_bin_links "$EXECUTABLES_TO_LINK"
+    if [ "$LINKED_CONDA_EXECUTABLES" = true ]; then
+        remove_conda_executables
+    fi
+    rm -rf "$INAUGURATE_OPT"
+    output "  !!! deleted '$INAUGURATE_OPT', exiting now...  !!!"
+    output ""
+fi
+
+exit 0
