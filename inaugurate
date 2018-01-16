@@ -746,11 +746,11 @@ if ! command_exists_only_user_visible $EXECUTABLE_NAME; then
     VENV_NAME="$PROFILE_NAME"
     CONDA_ENV_NAME="$PROFILE_NAME"
 
-    if [[ "$PROFILE_NAME" == "freckelize" || "$PROFILE_NAME" == "frecklecute" || "$PROFILE_NAME" == "freckles" || "$PROFILE_NAME" == "freckfreckfreck" ]]; then
+    if [[ "$PROFILE_NAME" == "freckelize" || "$PROFILE_NAME" == "frecklecute" || "$PROFILE_NAME" == "freckles" || "$PROFILE_NAME" == "freckfreckfreck" || "$PROFILE_NAME" == "frankentree" ]]; then
         # conda
         CONDA_PYTHON_VERSION="2.7"
         CONDA_DEPENDENCIES="pip cryptography pycrypto git"
-        EXECUTABLES_TO_LINK="freckles frecklecute freckelize freckfreckfreck"
+        EXECUTABLES_TO_LINK="freckles frecklecute freckelize freckfreckfreck frankentree inaugurate"
         EXTRA_EXECUTABLES="nsbl nsbl-tasks nsbl-playbook ansible ansible-playbook ansible-galaxy git"
         # deb
         DEB_DEPENDENCIES="curl build-essential git python-dev python-virtualenv virtualenv libssl-dev libffi-dev"
