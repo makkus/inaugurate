@@ -156,6 +156,24 @@ And using ``wget``:
 
 For the following examples I'll always use ``curl``, but of course you can use ``wget`` interchangeably.
 
+alternative for interactive command
++++++++++++++++++++++++++++++++++++
+
+In case the command you are trying to inaugurate requires interactive input, you can use either of those formats:
+
+.. code-block
+
+    bash <(wget -O- https://inaugurate.sh) <app_name> <app_args>
+
+or
+
+.. code-block
+
+    bash <(curl https://inaugurate.sh) <app_name> <app_args>
+
+
+I haven't figured out yet how to do that with sudo though.
+
 sudo/non-sudo
 ^^^^^^^^^^^^^
 
