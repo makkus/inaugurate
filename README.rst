@@ -161,13 +161,13 @@ alternative for interactive command
 
 In case the command you are trying to inaugurate requires interactive input, you can use either of those formats:
 
-.. code-block
+.. code-block::
 
     bash <(wget -O- https://inaugurate.sh) <app_name> <app_args>
 
 or
 
-.. code-block
+.. code-block::
 
     bash <(curl https://inaugurate.sh) <app_name> <app_args>
 
