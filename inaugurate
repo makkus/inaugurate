@@ -364,7 +364,7 @@ function install_commandlinetools {
                sed -e 's/^ *//' |
                tr -d '\n')
         output "    -> installing: $PROD..."
-        execute_log "sudo" "-u" "$INAUGURATE_USER" "softwareupdate" "-i" "$PROD" "Could not install $PROD"
+        execute_log "sudo" "-u" "$INAUGURATE_USER" "softwareupdate" "-i" "'$PROD'" "Could not install $PROD"
         rm /tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress
     else
         output "  - 'xcode' already present, skipping"
@@ -701,7 +701,7 @@ EOF
 export PATH="$LOCAL_BIN_PATH:$INAUGURATE_BIN_PATH:$PATH"
 #export PATH="$LOCAL_BIN_PATH:$PATH"
 
-execute_log "echo Starting inaugurate bootstrap:" "$(date)" "Error"
+execute_log "echo Starting inaugurate bootstrap:" "'$(date)'" "Error"
 
 # prepare pip, conda and apt mirrors if necessary
 if [ "$CHINA" = true ]; then
