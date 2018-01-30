@@ -25,9 +25,6 @@
 #
 #
 #
-# ============
-# script start
-# ============
 #
 # settings to control inaugurates behaviour (default is false or 'not set' for all those)
 # ---------------------------------------------------------------------------------------
@@ -51,6 +48,9 @@
 #                       # change to Debian mirrors in China (if applicable -- run with elevated
 #                       # permissions and on a Debian platform)
 #
+# ============
+# script start
+# ============
 
 # TEMPLATE_PLACEHOLDER
 
