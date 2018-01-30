@@ -159,7 +159,10 @@ function command_exists_only_user_visible {
 }
 
 function execute_log {
-    eval "$1" >> "$SCRIPT_LOG_FILE" 2>&1 || error_exit "$2"
+    # eval "$1" >> "$SCRIPT_LOG_FILE" 2>&1 || error_exit "$2"
+
+    local error="${@: -1}"
+    eval "${@:1:$#-1}" >> "$SCRIPT_LOG_FILE" 2>&1 || error_exit "$error"
 }
 
 function download {
@@ -303,7 +306,7 @@ function install_inaugurate_deb {
     # sometimes, on a new debian machine, the first (and even 2nd) 'apt-get update' fails...
     execute_log "apt-get update || apt-get update" "Could not update apt repository cache"
     output "  * installing dependencies: $DEB_DEPENDENCIES"
-    execute_log "apt-get install -y $DEB_DEPENDENCIES" "Error installing dependencies via apt."
+    execute_log "apt-get" "install" "-y" "$DEB_DEPENDENCIES" "Error installing dependencies via apt."
     output "  * creating '$VENV_NAME' virtual environment"
     create_virtualenv
     for pkgName in $PIP_DEPENDENCIES
@@ -319,7 +322,7 @@ function install_inaugurate_rpm {
     output "  * RedHat-based system detected."
     output "  * installing dependencies: $RPM_DEPENDENCIES"
     #execute_log "yum install -y epel-release" "Error installing epel-release via yum."
-    execute_log "yum install -y $RPM_DEPENDENCIES" "Error installing dependencies via yum."
+    execute_log "yum" "install" "-y" "$RPM_DEPENDENCIES" "Error installing dependencies via yum."
     output "  * creating '$VENV_NAME' virtual environment"
     create_virtualenv
     for pkgName in $PIP_DEPENDENCIES
@@ -334,7 +337,7 @@ function install_inaugurate_rpm {
 function install_inaugurate_dnf {
     output "  * RedHat-based system with 'dnf' detected."
     output "  * installing dependencies: yum python-dnf $RPM_DEPENDENCIES"
-    execute_log "dnf install -y yum python-dnf $RPM_DEPENDENCIES" "Error installing dependencies via yum."
+    execute_log "dnf" "install" "-y" "yum" "python-dnf" "$RPM_DEPENDENCIES" "Error installing dependencies via yum."
     output "  * creating '$VENV_NAME' virtual environment"
     create_virtualenv
     for pkgName in $PIP_DEPENDENCIES
@@ -359,7 +362,7 @@ function install_commandlinetools {
                sed -e 's/^ *//' |
                tr -d '\n')
         output "    -> installing: $PROD..."
-        execute_log "sudo -u \"$INAUGURATE_USER\" softwareupdate -i \"$PROD\" " "Could not install $PROD"
+        execute_log "sudo" "-u" "$INAUGURATE_USER" "softwareupdate" "-i" "$PROD" "Could not install $PROD"
         rm /tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress
     else
         output "  - 'xcode' already present, skipping"
@@ -572,7 +575,7 @@ function install_inaugurate_non_root_conda {
 
     if [ ! -e "$CONDA_INAUGURATE_ENV_EXE" ]; then
         output "  * creating '$CONDA_ENV_NAME' conda environment"
-        execute_log "$CONDA_ROOT_EXE create -y --name $CONDA_ENV_NAME python=$CONDA_PYTHON_VERSION" "Could not create conda environment."
+        execute_log "$CONDA_ROOT_EXE" "create" "-y" "--name" "$CONDA_ENV_NAME" "python=$CONDA_PYTHON_VERSION" "Could not create conda environment."
     else
         output "  - '$CONDA_ENV_NAME' conda environment already exists, not creating again"
     fi
@@ -584,7 +587,7 @@ function install_inaugurate_non_root_conda {
        output "    -> python already present in conda environment '$CONDA_ENV_NAME'"
      else
        output "    -> installing python (version $CONDA_PYTHON_VERSION) into conda environment '$CONDA_ENV_NAME'"
-       execute_log "$CONDA_ROOT_EXE install --name $CONDA_ENV_NAME -y python=$CONDA_PYTHON_VERSION" "Could not install python in conda environment."
+       execute_log "$CONDA_ROOT_EXE" "install" "--name" "$CONDA_ENV_NAME" "-y" "python=$CONDA_PYTHON_VERSION" "Could not install python in conda environment."
     fi
 
     # check conda dependencies
@@ -594,11 +597,11 @@ function install_inaugurate_non_root_conda {
             output "    -> package '$pkgName' already present in conda environment '$CONDA_ENV_NAME'"
          else
             output "    -> installing $pkgName into conda environment '$CONDA_ENV_NAME'"
-            execute_log "$CONDA_ROOT_EXE install --name $CONDA_ENV_NAME -y $pkgName" "Could not install $pkgName in conda environment."
+            execute_log "$CONDA_ROOT_EXE" "install" "--name" "$CONDA_ENV_NAME" "-y" "$pkgName" "Could not install $pkgName in conda environment."
          fi
     done
 
-    execute_log "source $INAUGURATE_CONDA_PATH/activate $CONDA_ENV_NAME" "Could not activate '$CONDA_ENV_NAME' conda environment"
+    execute_log "source" "$INAUGURATE_CONDA_PATH/activate" "$CONDA_ENV_NAME" "Could not activate '$CONDA_ENV_NAME' conda environment"
 
     for pkgName in $PIP_DEPENDENCIES
     do
@@ -607,11 +610,11 @@ function install_inaugurate_non_root_conda {
            output "    -> python package '$pkgName' already present in conda environment '$CONDA_ENV_NAME'"
         else
             output "    -> installing python package '$pkgName' into conda environment '$CONDA_ENV_NAME'"
-            execute_log "pip install -U $pkgName --upgrade-strategy only-if-needed" "Could not install $pkgName in conda environment"
+            execute_log "pip" "install" "-U" "$pkgName" "--upgrade-strategy" "only-if-needed" "Could not install $pkgName in conda environment"
         fi
 
     done
-    execute_log "source deactivate $CONDA_ENV_NAME" "Could not deactivate '$CONDA_ENV_NAME' conda environment"
+    execute_log "source" "deactivate" "$CONDA_ENV_NAME" "Could not deactivate '$CONDA_ENV_NAME' conda environment"
     link_conda_executables
     link_required_executables "$CONDA_INAUGURATE_ENV_PATH/bin" "$EXECUTABLES_TO_LINK"
     link_extra_executables "$CONDA_INAUGURATE_ENV_PATH/bin" "$EXTRA_EXECUTABLES"
@@ -696,7 +699,7 @@ EOF
 export PATH="$LOCAL_BIN_PATH:$INAUGURATE_BIN_PATH:$PATH"
 #export PATH="$LOCAL_BIN_PATH:$PATH"
 
-execute_log "echo Starting inaugurate bootstrap: `date`" "Error"
+execute_log "echo Starting inaugurate bootstrap:" "$(date)" "Error"
 
 # prepare pip, conda and apt mirrors if necessary
 if [ "$CHINA" = true ]; then
