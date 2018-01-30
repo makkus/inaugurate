@@ -762,6 +762,7 @@ if ! command_exists_only_user_visible $EXECUTABLE_NAME; then
     else
         config_get "$PROFILE_NAME"
     fi
+
     CONDA_ENV_NAME="$ENV_NAME"
     VENV_NAME="$ENV_NAME"
     CONDA_INAUGURATE_ENV_PATH="$CONDA_BASE_DIR/envs/$CONDA_ENV_NAME"
@@ -770,7 +771,6 @@ if ! command_exists_only_user_visible $EXECUTABLE_NAME; then
     # python/virtualenv related variables
     VIRTUALENV_DIR="$INAUGURATE_OPT/virtualenvs/$VENV_NAME"
     VIRTUALENV_PATH="$VIRTUALENV_DIR/bin"
-
 
     mkdir -p "$TEMP_DIR"
     mkdir -p "$LOCAL_BIN_PATH"
