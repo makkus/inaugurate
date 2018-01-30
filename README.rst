@@ -363,7 +363,7 @@ License
 GNU General Public License v3
 
 .. _freckles: https://github.com/makkus/freckles
-.. _frecklecute: https://docs.freckles.io/en/latest/frecklecute.html
+.. _frecklecute: https://docs.freckles.io/en/latest/frecklecute_command.html
 .. _conda: https://conda.io
 .. _app_store: https://github.com/inaugurate/store
 .. _ansible: http://docs.ansible.com/ansible/latest/intro_installation.html
