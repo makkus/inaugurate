@@ -24,7 +24,7 @@
 #                    https://github.com/makkus/inaugurate
 #
 #
-#                                            version: 1.1
+#                                            version: 1.2
 #
 #
 # settings to control inaugurates behaviour (default is false or 'not set' for all those)
@@ -32,6 +32,7 @@
 #
 # NO_ADD_PATH=true      # if set to true, ~/.local/bin won't be added to .profile
 # NO_EXEC=true          # if set to true, the 'inaugurated' application won't be run
+# FORCE_CONDA=false     # if set to true, conda will be used even when run as 'root' or using 'sudo'
 #
 # SELF_DESTRUCT=true    # if set to true, after the 'inaugurated' application is run, the folder(s)
 #                       # used in the installation process are deleted again. the system packages
@@ -94,6 +95,19 @@ else
     fi
 fi
 
+if [ "$root_permissions" = true ]; then
+    if [ "$FORCE_CONDA" = true ] && [ -z "$SUDO_USER" ]; then
+        install_method="conda"
+    else
+        if [ "$FORCE_CONDA" ]; then
+            echo "- '$FORCE_CONDA does not have an effect when used with 'sudo', ignoring..."
+        fi
+        install_method="sudo"
+    fi
+else
+    install_method="conda"
+fi
+
 # General variables
 PROGNAME="inaugurate"
 
@@ -140,6 +154,10 @@ fi
 function log () {
     echo "    .. $@" >> "$SCRIPT_LOG_FILE"
 }
+
+log "INAUGURATE_USER: $INAUGURATE_USER"
+log "root_permissions: $root_permissions"
+log "install_method: $install_method"
 
 function output() {
     log "$@"
@@ -261,7 +279,7 @@ INAUGURATE_CONDA_PATH="$CONDA_BASE_DIR/bin"
 CONDA_ROOT_EXE="$CONDA_BASE_DIR/bin/conda"
 
 function install_inaugurate {
-    if [ "$1" = true ]; then
+    if [ "$1" = "sudo" ]; then
         install_inaugurate_root
     else
         install_inaugurate_non_root_conda
@@ -520,7 +538,7 @@ function make_conda_env_links_relative {
     for exeName in conda activate deactivate
     do
         log "  * changing absolute to relative link for conda executable: $CONDA_INAUGURATE_ENV_PATH/bin/$exeName"
-        rm "$CONDA_INAUGURATE_ENV_PATH/bin/$exeName"
+        rm -f "$CONDA_INAUGURATE_ENV_PATH/bin/$exeName"
         ln -s "../../../bin/$exeName" "$CONDA_INAUGURATE_ENV_PATH/bin/$exeName"
     done
 }
@@ -570,7 +588,11 @@ function link_extra_executables {
 
 function install_inaugurate_non_root_conda {
 
-    output "  * no elevated permissions detected, using conda package manager"
+    if [ "$INAUGURATE_USER" == "root" ]; then
+        output "  * using conda package manager with 'root' account"
+    else
+        output "  * no elevated permissions detected, using conda package manager"
+    fi
 
     if [ ! -f "$CONDA_ROOT_EXE" ]; then
         install_conda_non_root
@@ -620,7 +642,7 @@ function install_inaugurate_non_root_conda {
         fi
 
     done
-    execute_log source deactivate "$CONDA_ENV_NAME" "Could not deactivate '$CONDA_ENV_NAME' conda environment"
+    execute_log source "$INAUGURATE_CONDA_PATH/deactivate" "$CONDA_ENV_NAME" "Could not deactivate '$CONDA_ENV_NAME' conda environment"
     link_conda_executables
     link_required_executables "$CONDA_INAUGURATE_ENV_PATH/bin" "$EXECUTABLES_TO_LINK"
     link_extra_executables "$CONDA_INAUGURATE_ENV_PATH/bin" "$EXTRA_EXECUTABLES"
@@ -729,7 +751,7 @@ if [ -n "$CONDA_CHANNEL" ] && [ ! -e "$INAUGURATE_USER_HOME/.condarc" ]; then
     echo "show_channel_urls: true" >> "$INAUGURATE_USER_HOME/.condarc"
 fi
 
-if [[ "$CHINA" = true && ( "$root_permissions" = true || "$INAUGURATE_USER" == "root" ) ]]; then
+if [[ "$CHINA" = true && "$install_method" == "sudo" ]]; then
     # check if Debian
     APT_GET_CMD=$(which apt-get 2> /dev/null)
     if [[ ! -z $APT_GET_CMD ]]; then
@@ -784,7 +806,7 @@ if ! command_exists_only_user_visible $EXECUTABLE_NAME; then
     mkdir -p "$TEMP_DIR"
     mkdir -p "$LOCAL_BIN_PATH"
     mkdir -p "$INAUGURATE_BIN_PATH"
-    if [ $root_permissions = true ]; then
+    if [[ $install_method == "sudo" ]]; then
         chown -R "$INAUGURATE_USER" "$BASE_DIR"
         chown -R "$INAUGURATE_USER" "$TEMP_DIR"
         chown -R "$INAUGURATE_USER" "$LOCAL_BIN_PATH"
@@ -792,7 +814,7 @@ if ! command_exists_only_user_visible $EXECUTABLE_NAME; then
         chown -R "$INAUGURATE_USER" "$INAUGURATE_OPT"
     fi
 
-    install_inaugurate "$root_permissions"
+    install_inaugurate "$install_method"
     output ""
 
     if [[ ! "$SELF_DESTRUCT" = true && ! "$NO_ADD_PATH" = true ]]; then
@@ -825,7 +847,7 @@ execute_log echo "Finished '$PROFILE_NAME' bootstrap: $(date)" "Error"
 
 #echo "INAUGURATE_PATH: $LOCAL_BIN_PATH"
 
-if [ "$root_permissions" = true ] && [ "$INAUGURATE_USER" != "root" ]; then
+if [[ "$install_method" == "sudo" ]]; then
     exec sudo -u "$INAUGURATE_USER" "$LOCAL_BIN_PATH/$EXECUTABLE_NAME" "$@"
 else
     PATH="$PATH:$LOCAL_BIN_PATH:$INAUGURATE_BIN_PATH" "$EXECUTABLE_NAME" "$@"

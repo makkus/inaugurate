@@ -198,6 +198,9 @@ Here's a list of environment variables that can be used to change *inaugurate's*
 *NO_EXEC*
     if set to true, *inaugurate* won't execute the inaugurated application after install
 
+*FORCE_CONDA*
+    if set to true and run as user 'root', *inaugurate* will use 'conda' (instead of system packages). This doesn't have any effect if used in combination with 'sudo'
+
 *SELF_DESTRUCT*
     if set to true, *inaugurate* will delete everything it installed in this run (under ``$HOME/.local/inaugurate``)
 
