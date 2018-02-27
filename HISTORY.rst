@@ -1,6 +1,11 @@
 History
 =======
 
+1.2
+---
+
+* added virtualenv conda dependency
+
 1.1 (2018-02-16)
 ----------------
 
