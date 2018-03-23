@@ -61,72 +61,106 @@
 # 3: execution error somewhere in the bootstrap pipeline
 # 6: platform or package manager not supported
 
-INAUGURATE_VERSION=1
+function init_vars
+{
+    INAUGURATE_VERSION=1
 
-if [ ! -z "$INAUGURATE_DEBUG" ]; then
-    DEBUG=true
-fi
-if [ "$DEBUG" = true ]; then
-    set -x
-fi
+    if [ ! -z "$INAUGURATE_DEBUG" ]; then
+        DEBUG=true
+    fi
+    if [ "$DEBUG" = true ]; then
+        set -x
+    fi
 
-# prepare some settings
-if [ "$CHINA" = true ]; then
-  PIP_INDEX_URL="https://pypi.tuna.tsinghua.edu.cn/simple"
-  CONDA_CHANNEL="https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/free/"
-fi
+    # prepare some settings
+    if [ "$CHINA" = true ]; then
+      PIP_INDEX_URL="https://pypi.tuna.tsinghua.edu.cn/simple"
+      CONDA_CHANNEL="https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/free/"
+    fi
 
-trap 'error_exit "Bootstrapping interrupted, exiting...; exit"' SIGHUP SIGINT SIGTERM
+    trap 'error_exit "Bootstrapping interrupted, exiting...; exit"' SIGHUP SIGINT SIGTERM
 
-# determine whether we run with sudo, or not
-if [ "$EUID" != 0 ]; then
-    root_permissions=false
-    INAUGURATE_USER="$USER"
-else
-    root_permissions=true
-    if [ -z "$SUDO_USER" ]; then
-        if [ ! -z "$USER" ]; then
-            INAUGURATE_USER="$USER"
+    # determine whether we run with sudo, or not
+    if [ "$EUID" != 0 ]; then
+        root_permissions=false
+        INAUGURATE_USER="$USER"
+    else
+        root_permissions=true
+        if [ -z "$SUDO_USER" ]; then
+            if [ ! -z "$USER" ]; then
+                INAUGURATE_USER="$USER"
+            else
+                INAUGURATE_USER="root"
+            fi
         else
-            INAUGURATE_USER="root"
+            INAUGURATE_USER="$SUDO_USER"
+        fi
+    fi
+
+    if [ "$root_permissions" = true ]; then
+        if [ "$FORCE_CONDA" = true ] && [ -z "$SUDO_USER" ]; then
+            install_method="conda"
+        else
+            if [ "$FORCE_CONDA" ]; then
+                echo "- '$FORCE_CONDA does not have an effect when used with 'sudo', ignoring..."
+            fi
+            install_method="sudo"
         fi
     else
-        INAUGURATE_USER="$SUDO_USER"
-    fi
-fi
-
-if [ "$root_permissions" = true ]; then
-    if [ "$FORCE_CONDA" = true ] && [ -z "$SUDO_USER" ]; then
         install_method="conda"
-    else
-        if [ "$FORCE_CONDA" ]; then
-            echo "- '$FORCE_CONDA does not have an effect when used with 'sudo', ignoring..."
-        fi
-        install_method="sudo"
     fi
-else
-    install_method="conda"
-fi
 
-# General variables
-PROGNAME="inaugurate"
+    # General variables
+    PROGNAME="inaugurate"
 
-INAUGURATE_USER_HOME="`eval echo ~$INAUGURATE_USER`"
-INAUGURATE_BASE_DIR="$INAUGURATE_USER_HOME/.inaugurate"
-BASE_DIR="$INAUGURATE_USER_HOME/.local"
+    INAUGURATE_USER_HOME="`eval echo ~$INAUGURATE_USER`"
+    INAUGURATE_BASE_DIR="$INAUGURATE_USER_HOME/.inaugurate"
+    BASE_DIR="$INAUGURATE_USER_HOME/.local/share"
 
-INAUGURATE_OPT="$BASE_DIR/inaugurate"
-INSTALL_LOG_DIR="$INAUGURATE_OPT/logs/"
+    INAUGURATE_OPT="$BASE_DIR/inaugurate"
+    INSTALL_LOG_DIR="$INAUGURATE_OPT/logs/"
 
-TEMP_DIR="$INAUGURATE_OPT/tmp/"
+    TEMP_DIR="$INAUGURATE_OPT/tmp/"
 
-SCRIPT_LOG_FILE="$INSTALL_LOG_DIR/install_$(date +"%Y%m%d%H%M%S").log"
-mkdir -p "$INSTALL_LOG_DIR"
-touch "$SCRIPT_LOG_FILE"
-chmod 700 "$SCRIPT_LOG_FILE"
+    SCRIPT_LOG_FILE="$INSTALL_LOG_DIR/install_$(date +"%Y%m%d%H%M%S").log"
+    mkdir -p "$INSTALL_LOG_DIR"
+    touch "$SCRIPT_LOG_FILE"
+    chmod 700 "$SCRIPT_LOG_FILE"
 
-LOCAL_BIN_PATH="$BASE_DIR/bin"
-INAUGURATE_BIN_PATH="$INAUGURATE_OPT/bin"
+    LOCAL_BIN_PATH="$INAUGURATE_USER_HOME/.local/bin"
+    INAUGURATE_BIN_PATH="$INAUGURATE_OPT/bin"
+
+    if [ ! -z "$1" ]; then
+        PROFILE_NAME=`basename "$1"`
+    else
+        PROFILE_NAME="inaugurate"
+    fi
+
+    log "INAUGURATE_USER: $INAUGURATE_USER"
+    log "root_permissions: $root_permissions"
+    log "install_method: $install_method"
+
+    # inaugurate vars
+    # conda
+    INAUGURATE_CONDA_PYTHON_VERSION="2.7"
+    INAUGURATE_CONDA_DEPENDENCIES="pip cryptography pycrypto git"
+    INAUGURATE_CONDA_EXECUTABLES_TO_LINK="$PROFILE_NAME"
+    # deb
+    INAUGURATE_DEB_DEPENDENCIES="build-essential git python-dev python-virtualenv virtualenv libssl-dev libffi-dev"
+    # rpm
+    INAUGURATE_RPM_DEPENDENCIES="wget git python-virtualenv openssl-devel gcc libffi-devel python-devel openssl-devel"
+    # pip requirements
+    INAUGURATE_PIP_DEPENDENCIES="inaugurate"
+
+
+    # conda related variables
+    CONDA_DOWNLOAD_URL_LINUX="https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh"
+    CONDA_DOWNLOAD_URL_MAC="https://repo.continuum.io/miniconda/Miniconda2-latest-MacOSX-x86_64.sh"
+    CONDA_BASE_DIR="$BASE_DIR/inaugurate/conda"
+    INAUGURATE_CONDA_PATH="$CONDA_BASE_DIR/bin"
+    CONDA_ROOT_EXE="$CONDA_BASE_DIR/bin/conda"
+}
+
 function error_exit
 {
 
@@ -141,23 +175,10 @@ function error_exit
 	  exit 1
 }
 
-# echo "ROOT_PERMISSIONS: $root_permissions"
-# echo "INAUGURATE_USER: $INAUGURATE_USER"
-
-if [ ! -z "$1" ]; then
-    PROFILE_NAME=`basename "$1"`
-else
-    PROFILE_NAME="inaugurate"
-fi
-
 # functions to read (remote) config
 function log () {
     echo "    .. $@" >> "$SCRIPT_LOG_FILE"
 }
-
-log "INAUGURATE_USER: $INAUGURATE_USER"
-log "root_permissions: $root_permissions"
-log "install_method: $install_method"
 
 function output() {
     log "$@"
@@ -257,25 +278,7 @@ function config_get() {
 }
 
 
-# inaugurate vars
-# conda
-INAUGURATE_CONDA_PYTHON_VERSION="2.7"
-INAUGURATE_CONDA_DEPENDENCIES="pip cryptography pycrypto git"
-INAUGURATE_CONDA_EXECUTABLES_TO_LINK="$PROFILE_NAME"
-# deb
-INAUGURATE_DEB_DEPENDENCIES="build-essential git python-dev python-virtualenv virtualenv libssl-dev libffi-dev"
-# rpm
-INAUGURATE_RPM_DEPENDENCIES="wget git python-virtualenv openssl-devel gcc libffi-devel python-devel openssl-devel"
-# pip requirements
-INAUGURATE_PIP_DEPENDENCIES="inaugurate"
 
-
-# conda related variables
-CONDA_DOWNLOAD_URL_LINUX="https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh"
-CONDA_DOWNLOAD_URL_MAC="https://repo.continuum.io/miniconda/Miniconda2-latest-MacOSX-x86_64.sh"
-CONDA_BASE_DIR="$BASE_DIR/inaugurate/conda"
-INAUGURATE_CONDA_PATH="$CONDA_BASE_DIR/bin"
-CONDA_ROOT_EXE="$CONDA_BASE_DIR/bin/conda"
 
 function install_inaugurate {
     if [ "$1" = "sudo" ]; then
@@ -725,145 +728,152 @@ EOF
 
 ############# Start script ##################
 
-export PATH="$LOCAL_BIN_PATH:$INAUGURATE_BIN_PATH:$PATH"
-#export PATH="$LOCAL_BIN_PATH:$PATH"
+function main
+{
+    init_vars ${@}
 
-execute_log echo "Starting inaugurate bootstrap: $(date)" "Error"
+    export PATH="$LOCAL_BIN_PATH:$INAUGURATE_BIN_PATH:$PATH"
+    #export PATH="$LOCAL_BIN_PATH:$PATH"
 
-# prepare pip, conda and apt mirrors if necessary
-if [ "$CHINA" = true ]; then
-    CONDA_DOWNLOAD_URL_LINUX="https://mirrors.tuna.tsinghua.edu.cn/anaconda/miniconda/Miniconda2-latest-Linux-x86_64.sh"
-    CONDA_DOWNLOAD_URL_MAC="https://mirrors.tuna.tsinghua.edu.cn/anaconda/miniconda/Miniconda2-latest-MacOSX-x86_64.sh"
-fi
+    execute_log echo "Starting inaugurate bootstrap: $(date)" "Error"
 
-if [ -n "$PIP_INDEX_URL" ] && [ ! -e "$INAUGURATE_USER_HOME/.pip/pip.conf" ]; then
-    output ""
-    output "* setting pip index to: $PIP_INDEX_URL"
-    mkdir -p "$INAUGURATE_USER_HOME/.pip"
-    echo "[global]" > "$INAUGURATE_USER_HOME/.pip/pip.conf"
-    echo "index-url = $PIP_INDEX_URL" >> "$INAUGURATE_USER_HOME/.pip/pip.conf"
-fi
-
-if [ -n "$CONDA_CHANNEL" ] && [ ! -e "$INAUGURATE_USER_HOME/.condarc" ]; then
-    output ""
-    output "* setting conda channel to: $CONDA_CHANNEL"
-    echo "channels:" > "$INAUGURATE_USER_HOME/.condarc"
-    echo "  - $CONDA_CHANNEL" >> "$INAUGURATE_USER_HOME/.condarc"
-    echo "show_channel_urls: true" >> "$INAUGURATE_USER_HOME/.condarc"
-fi
-
-if [[ "$CHINA" = true && "$install_method" == "sudo" ]]; then
-    # check if Debian
-    APT_GET_CMD=$(which apt-get 2> /dev/null)
-    if [[ ! -z $APT_GET_CMD ]]; then
-       output ""
-       output "setting apt sources to ftp.cn.debian.org mirror"
-       if [ ! -e /etc/apt/sources.list.bak.inaugurate ]; then
-            cp /etc/apt/sources.list /etc/apt/sources.list.bak.inaugurate
-       fi
-       sed -i 's/deb.debian.org/ftp.cn.debian.org/g' /etc/apt/sources.list
-    fi
-fi
-
-# check if command is already in the path, if it is, assume everything is bootstrapped
-EXECUTABLE_NAME="$PROFILE_NAME"
-
-if ! command_exists_only_user_visible $EXECUTABLE_NAME; then
-
-    output ""
-    output "'$EXECUTABLE_NAME' not found in path, inaugurating..."
-    output ""
-
-    # profile dependent
-    VENV_NAME="$PROFILE_NAME"
-    CONDA_ENV_NAME="$PROFILE_NAME"
-
-    if [[ "$PROFILE_NAME" == "freckelize" || "$PROFILE_NAME" == "frecklecute" || "$PROFILE_NAME" == "freckles" || "$PROFILE_NAME" == "freckfreckfreck" || "$PROFILE_NAME" == "frankentree" ]]; then
-        # conda
-        CONDA_PYTHON_VERSION="2.7"
-        CONDA_DEPENDENCIES="pip cryptography pycrypto git virtualenv"
-        EXECUTABLES_TO_LINK="freckles frecklecute freckelize freckfreckfreck frankentree inaugurate frocker"
-        EXTRA_EXECUTABLES="nsbl nsbl-tasks nsbl-playbook ansible ansible-playbook ansible-galaxy git"
-        # deb
-        DEB_DEPENDENCIES="curl build-essential git python-dev python-virtualenv virtualenv libssl-dev libffi-dev"
-        # rpm
-        RPM_DEPENDENCIES="wget git python-virtualenv openssl-devel gcc libffi-devel python-devel"
-        # pip requirements
-        PIP_DEPENDENCIES="freckles"
-        ENV_NAME="inaugurate"
-    else
-        config_get "$PROFILE_NAME"
+    # prepare pip, conda and apt mirrors if necessary
+    if [ "$CHINA" = true ]; then
+        CONDA_DOWNLOAD_URL_LINUX="https://mirrors.tuna.tsinghua.edu.cn/anaconda/miniconda/Miniconda2-latest-Linux-x86_64.sh"
+        CONDA_DOWNLOAD_URL_MAC="https://mirrors.tuna.tsinghua.edu.cn/anaconda/miniconda/Miniconda2-latest-MacOSX-x86_64.sh"
     fi
 
-    CONDA_ENV_NAME="$ENV_NAME"
-    VENV_NAME="$ENV_NAME"
-    CONDA_INAUGURATE_ENV_PATH="$CONDA_BASE_DIR/envs/$CONDA_ENV_NAME"
-    CONDA_INAUGURATE_ENV_EXE="$CONDA_INAUGURATE_ENV_PATH/bin/conda"
-
-    # python/virtualenv related variables
-    VIRTUALENV_DIR="$INAUGURATE_OPT/virtualenvs/$VENV_NAME"
-    VIRTUALENV_PATH="$VIRTUALENV_DIR/bin"
-
-    mkdir -p "$TEMP_DIR"
-    mkdir -p "$LOCAL_BIN_PATH"
-    mkdir -p "$INAUGURATE_BIN_PATH"
-    if [[ $install_method == "sudo" ]]; then
-        chown -R "$INAUGURATE_USER" "$BASE_DIR"
-        chown -R "$INAUGURATE_USER" "$TEMP_DIR"
-        chown -R "$INAUGURATE_USER" "$LOCAL_BIN_PATH"
-        chown -R "$INAUGURATE_USER" "$INAUGURATE_BIN_PATH"
-        chown -R "$INAUGURATE_USER" "$INAUGURATE_OPT"
-    fi
-
-    install_inaugurate "$install_method"
-    output ""
-
-    if [[ ! "$SELF_DESTRUCT" = true && ! "$NO_ADD_PATH" = true ]]; then
-        add_inaugurate_path
-    fi
-
-    #inaugurate "$1"
-
-    shift
-    output ""
-    if [ "$NO_EXEC" = true ]; then
-        output "Boostrapping finished, NO_EXEC flag set, so not executing '$EXECUTABLE_NAME', exiting instead..."
-        exit 0
-    else
-        output "Bootstrapping finished, now attempting to run '$EXECUTABLE_NAME' (like so: '$EXECUTABLE_NAME $@')"
+    if [ -n "$PIP_INDEX_URL" ] && [ ! -e "$INAUGURATE_USER_HOME/.pip/pip.conf" ]; then
         output ""
-        output "========================================================================"
-        output ""
+        output "* setting pip index to: $PIP_INDEX_URL"
+        mkdir -p "$INAUGURATE_USER_HOME/.pip"
+        echo "[global]" > "$INAUGURATE_USER_HOME/.pip/pip.conf"
+        echo "index-url = $PIP_INDEX_URL" >> "$INAUGURATE_USER_HOME/.pip/pip.conf"
     fi
-else
-    if [ "$NO_EXEC" = true ]; then
-        output "NO_EXEC flag set, so not executing '$EXECUTABLE_NAME'. Exiting..."
-        exit 0
-    else
+
+    if [ -n "$CONDA_CHANNEL" ] && [ ! -e "$INAUGURATE_USER_HOME/.condarc" ]; then
+        output ""
+        output "* setting conda channel to: $CONDA_CHANNEL"
+        echo "channels:" > "$INAUGURATE_USER_HOME/.condarc"
+        echo "  - $CONDA_CHANNEL" >> "$INAUGURATE_USER_HOME/.condarc"
+        echo "show_channel_urls: true" >> "$INAUGURATE_USER_HOME/.condarc"
+    fi
+
+    if [[ "$CHINA" = true && "$install_method" == "sudo" ]]; then
+        # check if Debian
+        APT_GET_CMD=$(which apt-get 2> /dev/null)
+        if [[ ! -z $APT_GET_CMD ]]; then
+           output ""
+           output "setting apt sources to ftp.cn.debian.org mirror"
+           if [ ! -e /etc/apt/sources.list.bak.inaugurate ]; then
+                cp /etc/apt/sources.list /etc/apt/sources.list.bak.inaugurate
+           fi
+           sed -i 's/deb.debian.org/ftp.cn.debian.org/g' /etc/apt/sources.list
+        fi
+    fi
+
+    # check if command is already in the path, if it is, assume everything is bootstrapped
+    EXECUTABLE_NAME="$PROFILE_NAME"
+
+    if ! command_exists_only_user_visible $EXECUTABLE_NAME; then
+
+        output ""
+        output "'$EXECUTABLE_NAME' not found in path, inaugurating..."
+        output ""
+
+        # profile dependent
+        VENV_NAME="$PROFILE_NAME"
+        CONDA_ENV_NAME="$PROFILE_NAME"
+
+        if [[ "$PROFILE_NAME" == "freckelize" || "$PROFILE_NAME" == "frecklecute" || "$PROFILE_NAME" == "freckles" || "$PROFILE_NAME" == "freckfreckfreck" || "$PROFILE_NAME" == "frankentree" ]]; then
+            # conda
+            CONDA_PYTHON_VERSION="2.7"
+            CONDA_DEPENDENCIES="pip cryptography pycrypto git virtualenv"
+            EXECUTABLES_TO_LINK="freckles frecklecute freckelize freckfreckfreck frankentree inaugurate frocker"
+            EXTRA_EXECUTABLES="nsbl nsbl-tasks nsbl-playbook ansible ansible-playbook ansible-galaxy git"
+            # deb
+            DEB_DEPENDENCIES="curl build-essential git python-dev python-virtualenv virtualenv libssl-dev libffi-dev"
+            # rpm
+            RPM_DEPENDENCIES="wget git python-virtualenv openssl-devel gcc libffi-devel python-devel"
+            # pip requirements
+            PIP_DEPENDENCIES="freckles"
+            ENV_NAME="inaugurate"
+        else
+            config_get "$PROFILE_NAME"
+        fi
+
+        CONDA_ENV_NAME="$ENV_NAME"
+        VENV_NAME="$ENV_NAME"
+        CONDA_INAUGURATE_ENV_PATH="$CONDA_BASE_DIR/envs/$CONDA_ENV_NAME"
+        CONDA_INAUGURATE_ENV_EXE="$CONDA_INAUGURATE_ENV_PATH/bin/conda"
+
+        # python/virtualenv related variables
+        VIRTUALENV_DIR="$INAUGURATE_OPT/virtualenvs/$VENV_NAME"
+        VIRTUALENV_PATH="$VIRTUALENV_DIR/bin"
+
+        mkdir -p "$TEMP_DIR"
+        mkdir -p "$LOCAL_BIN_PATH"
+        mkdir -p "$INAUGURATE_BIN_PATH"
+        if [[ $install_method == "sudo" ]]; then
+            chown -R "$INAUGURATE_USER" "$BASE_DIR"
+            chown -R "$INAUGURATE_USER" "$TEMP_DIR"
+            chown -R "$INAUGURATE_USER" "$LOCAL_BIN_PATH"
+            chown -R "$INAUGURATE_USER" "$INAUGURATE_BIN_PATH"
+            chown -R "$INAUGURATE_USER" "$INAUGURATE_OPT"
+        fi
+
+        install_inaugurate "$install_method"
+        output ""
+
+        if [[ ! "$SELF_DESTRUCT" = true && ! "$NO_ADD_PATH" = true ]]; then
+            add_inaugurate_path
+        fi
+
+        #inaugurate "$1"
+
         shift
+        output ""
+        if [ "$NO_EXEC" = true ]; then
+            output "Boostrapping finished, NO_EXEC flag set, so not executing '$EXECUTABLE_NAME', exiting instead..."
+            exit 0
+        else
+            output "Bootstrapping finished, now attempting to run '$EXECUTABLE_NAME' (like so: '$EXECUTABLE_NAME $@')"
+            output ""
+            output "========================================================================"
+            output ""
+        fi
+    else
+        if [ "$NO_EXEC" = true ]; then
+            output "NO_EXEC flag set, so not executing '$EXECUTABLE_NAME'. Exiting..."
+            exit 0
+        else
+            shift
+        fi
     fi
-fi
 
-execute_log echo "Finished '$PROFILE_NAME' bootstrap: $(date)" "Error"
+    execute_log echo "Finished '$PROFILE_NAME' bootstrap: $(date)" "Error"
 
-#echo "INAUGURATE_PATH: $LOCAL_BIN_PATH"
+    #echo "INAUGURATE_PATH: $LOCAL_BIN_PATH"
 
-if [[ "$install_method" == "sudo" ]]; then
-    exec sudo -u "$INAUGURATE_USER" "$LOCAL_BIN_PATH/$EXECUTABLE_NAME" "$@"
-else
-    PATH="$PATH:$LOCAL_BIN_PATH:$INAUGURATE_BIN_PATH" "$EXECUTABLE_NAME" "$@"
-fi
-
-if [ "$SELF_DESTRUCT" = true ]; then
-    output ""
-    output "  !!!  SELF_DESTRUCT flag set, deleting inaugurate-created folders and created links...  !!!"
-    remove_local_bin_links "$EXECUTABLES_TO_LINK"
-    if [ "$LINKED_CONDA_EXECUTABLES" = true ]; then
-        remove_conda_executables
+    if [[ "$install_method" == "sudo" ]]; then
+        exec sudo -u "$INAUGURATE_USER" "$LOCAL_BIN_PATH/$EXECUTABLE_NAME" "$@"
+    else
+        PATH="$PATH:$LOCAL_BIN_PATH:$INAUGURATE_BIN_PATH" "$EXECUTABLE_NAME" "$@"
     fi
-    rm -rf "$INAUGURATE_OPT"
-    output "  !!! deleted '$INAUGURATE_OPT', exiting now...  !!!"
-    output ""
-fi
 
-exit 0
+    if [ "$SELF_DESTRUCT" = true ]; then
+        output ""
+        output "  !!!  SELF_DESTRUCT flag set, deleting inaugurate-created folders and created links...  !!!"
+        remove_local_bin_links "$EXECUTABLES_TO_LINK"
+        if [ "$LINKED_CONDA_EXECUTABLES" = true ]; then
+            remove_conda_executables
+        fi
+        rm -rf "$INAUGURATE_OPT"
+        output "  !!! deleted '$INAUGURATE_OPT', exiting now...  !!!"
+        output ""
+    fi
+
+    exit 0
+}
+
+main ${@}
