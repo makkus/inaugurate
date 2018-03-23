@@ -114,7 +114,7 @@ Here's what the different vars mean:
     a list of executables that should be linked ot ``$HOME/.local/bin``
 
 *EXTRA_EXECUTABLES*
-    an optional list of secondary executables. this is mainly used within freckles_. executables in this list are linked into ``$HOME/.local/inaugurate/bin``
+    an optional list of secondary executables. this is mainly used within freckles_. executables in this list are linked into ``$HOME/.local/share/inaugurate/bin``
 
 *CONDA_PYTHON_VERSION*
     if using conda, this is the python version that is used in the new environment
@@ -202,7 +202,7 @@ Here's a list of environment variables that can be used to change *inaugurate's*
     if set to true and run as user 'root', *inaugurate* will use 'conda' (instead of system packages). This doesn't have any effect if used in combination with 'sudo'
 
 *SELF_DESTRUCT*
-    if set to true, *inaugurate* will delete everything it installed in this run (under ``$HOME/.local/inaugurate``)
+    if set to true, *inaugurate* will delete everything it installed in this run (under ``$HOME/.local/share/inaugurate``)
 
 *PIP_INDEX_URL*
     if set, a file ``$HOME/.pip/pip.conf`` will be created, and the provided string will be set as as ``index-url`` (only if ``pip.conf`` does not exist already)
@@ -219,7 +219,7 @@ How does this work? What does it do?
 
 *inaugurate* is a `shell script <https://github.com/makkus/inaugurate/blob/master/inaugurate.sh>`_ that, in most cases, will be downloaded via ``curl`` or ``wget`` (obviously you can just download it once and invoke it directly). It's behaviour can be controlled by environment variables (see examples above).
 
-*inaugurate* touches two things when it is run. It adds a line to ``$HOME/.profile``, and it creates a folder ``$HOME/.local/inaugurate`` where it puts all the application data it installs. In addition, if invoked using root permissions, it will also potentially install dependencies via system packages.
+*inaugurate* touches two things when it is run. It adds a line to ``$HOME/.profile``, and it creates a folder ``$HOME/.local/share/inaugurate`` where it puts all the application data it installs. In addition, if invoked using root permissions, it will also potentially install dependencies via system packages.
 
 .profile
 ^^^^^^^^
@@ -251,9 +251,9 @@ You'll have to figure out a way to manually add your inaugurated applications to
 package install locations
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Everything is installed in the users home directory, under ``$HOME/.local/inaugurate``. Each application you 'inaugurate' gets its own environemnt (a python *virtualenv* in case of a *sudo* install, or a `conda environment <https://conda.io/docs/user-guide/tasks/manage-environments.html>`_ otherwise). The executables that are specified in the *inaugurate* app description (for example: https://github.com/inaugurate/store/blob/master/ansible) will be linked into the folder ``$HOME/.local/bin``.
+Everything is installed in the users home directory, under ``$HOME/.local/share/inaugurate``. Each application you 'inaugurate' gets its own environemnt (a python *virtualenv* in case of a *sudo* install, or a `conda environment <https://conda.io/docs/user-guide/tasks/manage-environments.html>`_ otherwise). The executables that are specified in the *inaugurate* app description (for example: https://github.com/inaugurate/store/blob/master/ansible) will be linked into the folder ``$HOME/.local/bin``.
 
-By containing everything under ``$HOME/.local/inaugurate``, deleting this folder will delete all traces of *inaugurate* and 'inaugurated' apps (except for the added ``PATH`` in ``.profile``) and free up all space (except for potentially installed system dependency packages).
+By containing everything under ``$HOME/.local/share/inaugurate``, deleting this folder will delete all traces of *inaugurate* and 'inaugurated' apps (except for the added ``PATH`` in ``.profile``) and free up all space (except for potentially installed system dependency packages).
 
 As mentioned, if invoked using ``sudo`` (or as user *root*), *inaugurate* will try to install dependencies using system packages (and python packages using virtualenv), otherwise *conda* is used to perform an entirely non-root install. This is the reason why both cases differ slightly in the folders that are created and used:
 
@@ -272,11 +272,11 @@ As mentioned, if invoked using ``sudo`` (or as user *root*), *inaugurate* will t
             └── inaugurate
             └── <other app>
 
-In this case, new application environments are created under ``.local/inaugurate/virtualenvs``. So, for example, if you want to activate one of those virtualenvs (something you usually don't need to do as the executables you probably want are all linked into ``.local/bin`` which is in your ``PATH`` by now), you can do:
+In this case, new application environments are created under ``.local/share/inaugurate/virtualenvs``. So, for example, if you want to activate one of those virtualenvs (something you usually don't need to do as the executables you probably want are all linked into ``.local/bin`` which is in your ``PATH`` by now), you can do:
 
 .. code-block:: console
 
-   source .local/inaugurate/virtualenvs/<app_name>/bin/activate
+   source .local/share/inaugurate/virtualenvs/<app_name>/bin/activate
 
 deactivate it issuing:
 
@@ -307,11 +307,11 @@ deactivate it issuing:
        │   └── ssl
        └── logs
 
-Conda app environments can be found under ``.local/inaugurate/conda/envs``. In this case, if you'd wanted to activate a specific conda environment (again, usually you don't need to do this), you can do:
+Conda app environments can be found under ``.local/share/inaugurate/conda/envs``. In this case, if you'd wanted to activate a specific conda environment (again, usually you don't need to do this), you can do:
 
 .. code-block:: console
 
-   source .local/inaugurate/conda/bin/activate <env_name>
+   source .local/bin/activate <env_name>
 
 and to deactivate:
 
