@@ -197,7 +197,7 @@ function download {
     } >> "$SCRIPT_LOG_FILE"
 }
 
-read_remote() {
+function read_remote() {
 
     if command_exists wget; then
         wget -qO- "$1"
@@ -210,11 +210,11 @@ read_remote() {
 
 }
 
-config_read() {
+function config_read() {
     (echo "$1" | grep -E "^${2}=" -m 1 2>/dev/null || echo "VAR=__UNDEFINED__") | head -n 1 | cut -d '=' -f 2-;
 }
 
-config_get() {
+function config_get() {
 
 
     INAUGURATE_LOCAL_STORE="$INAUGURATE_BASE_DIR/local-store"
@@ -254,7 +254,6 @@ config_get() {
     if [ "${ENV_NAME}" = "__UNDEFINED__" ]; then
         ENV_NAME="$EXECUTABLE_NAME"
     fi
-
 }
 
 
