@@ -26,19 +26,28 @@ So here's an example on how you 'inaugurate' frecklecute_, which comes bundled w
 
 .. code-block:: console
 
-   curl https://inaugurate.sh | bash -s -- frecklecute --help
+   ❯ curl https://inaugurate.sh | bash -s -- frecklecute --help
+     'frecklecute' not found in path, inaugurating...
+        * checking inaugurate app store for: freckles
+        ...
+        ... < more inaugurate progress output >
+        ...
+     Usage: frecklecute [OPTIONS] FRECKLECUTABLE [ARGS]...
+        ...
+        ... < more usage information >
+        ...
 
-As mentioned, *inaugurate* also executes the application once it's installed, which is why the ``--help`` option is provided in this example. This behaviour (among others) can be turned off, if needed, with the help of an environment variable:
+Here *inaugurate* executes the application once it's installed (not doing anything useful, only showing usage information). This behavior (among others) can be turned off, if need be, with the help of an environment variable:
 
 .. code-block:: console
 
-   curl https://inaugurate.sh | NO_EXEC=true bash -s -- frecklecute
+   ❯ curl https://inaugurate.sh | NO_EXEC=true bash -s -- frecklecute
 
 Of course, we can also use ``wget`` instead of ``curl``:
 
 .. code-block:: console
 
-   wget -O - https://inaugurate.sh | SELF_DESTRUCT=true bash -s -- frecklecute --help
+   ❯ wget -O - https://inaugurate.sh | SELF_DESTRUCT=true bash -s -- frecklecute --help
 
 In this last example, *inaugurate* will delete itself and the application it just installed after that application ran. Again, this might for example be useful if you build a container, and want the end-product be as slim as possible.
 
@@ -46,7 +55,7 @@ By default, *inaugurate* uses conda_ to bootstrap the desired application into t
 
 .. code-block:: console
 
-   curl https://inaugurate.sh | sudo NO_EXEC=true bash -s -- frecklecute
+   ❯ curl https://inaugurate.sh | sudo NO_EXEC=true bash -s -- frecklecute
 
 
 Features
@@ -328,21 +337,27 @@ deactivate it issuing:
 
    .local/
    ├── bin
-   └── inaugurate
-       ├── bin
-       ├── conda
-       │   ├── bin
-       │   ├── conda-meta
-       │   ├── envs
-       │   │   └── inaugurate
-       │   │   └── <other app>
-       │   ├── etc
-       │   ├── include
-       │   ├── lib
-       │   ├── pkgs
-       │   ├── share
-       │   └── ssl
-       └── logs
+   │    ├── <linked_executable_1>
+   │    ├── <linked_executable_1>
+   │   ...
+   │   ...
+   │
+   ├── share
+       └── inaugurate
+           ├── bin
+           ├── conda
+           │   ├── bin
+           │   ├── conda-meta
+           │   ├── envs
+           │   │   └── inaugurate
+           │   │   └── <other app>
+           │   ├── etc
+           │   ├── include
+           │   ├── lib
+           │   ├── pkgs
+           │   ├── share
+           │   └── ssl
+           └── logs
 
 Conda app environments can be found under ``.local/share/inaugurate/conda/envs``. In this case, if you'd wanted to activate a specific conda environment (again, usually you don't need to do this), you can do:
 
