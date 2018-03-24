@@ -56,7 +56,8 @@
 #                       # both pip and conda to point to mirrors within China, and it tries to also
 #                       # change to Debian mirrors in China (if applicable -- run with elevated
 #                       # permissions and on a Debian platform)
-#
+
+
 # ============
 # script start
 # ============
@@ -69,12 +70,19 @@
 # 7: script run with wrong permissions
 
 
-# set hardcoded environment variables/defaults here, or use
-# luci to generate your customized inaugurate script:
+# ===============
+# custom defaults
+# ===============
+
+# Set your custom application,  hardcoded environment variables and/or defaults here.
 #
-# https://github.com/makkus/luci
+# For more information, check out:
 #
-# LUCI_TEMPLATE_PLACEHOLDER
+# https://github.com/makkus/inaugurate#your-own-custom-inaugurate-script
+#
+# NOTE:
+#   Only set variables here, don't execute anything as that might cause a problem if
+#   the script download is interrupted.
 
 # Example hardcoded default flag
 #
@@ -101,6 +109,18 @@
 # # pip requirements
 # DEFAULT_PROFILE_PIP_DEPENDENCIES="freckles"
 # DEFAULT_PROFILE_ENV_NAME="freckles"
+
+# Below is a marker string that can be used with luci ( https://github.com/makkus/luci ) to
+# auto-generate an option-url tree for this script. More info:
+#
+# https://github.com/makkus/inaugurate#use-luci-to-create-a-option-url-tree
+#
+# LUCI_TEMPLATE_MARKER
+
+
+# =========
+# functions
+# =========
 
 function init_vars
 {
@@ -969,5 +989,9 @@ function main
 
     exit 0
 }
+
+# ============================
+# script execution entry point
+# ============================
 
 main ${@}
