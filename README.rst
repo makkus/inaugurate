@@ -8,7 +8,7 @@ inaugurate
 
    curl https://inaugurate.sh | bash -s -- <application> <args>
 
-or download it, optionally customize it (change defaults, add your own application to the script as a default), and host it yourself somewhere.
+Or you can download it, optionally customize it (change defaults, add your own application to the script as a default), and host it yourself somewhere.
 
 *inaugurate* also comes with an '`official app store <https://github.com/inaugurate/store>`_', although that is, for now at least, mostly to demonstrate it's 'app-store' feature. That app-store, of course, can also be customized and self-hosted.
 
