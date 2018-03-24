@@ -9,11 +9,13 @@ Features
 
 - lets you install (mainly python, but potentially also other) applications and run them in the same go
 - can (optionally) delete itself and the application it bootstrapped after the command was executed
-- has no dependencies except for either ``curl`` or ``wget``
 - supports 'non-root'-permission installs (via conda_)
+- has no dependencies except for either ``curl`` or ``wget`` (and bzip2 when using *conda*)
 - creates seperate environments for each package it installs (either via python virtualenv or conda)
 - has it's own 'official' app_store_, or lets you use your own local one
+- easily customizable, so you can host it yourself
 - supports Debian-, RedHat- based Linux distros, as well as Mac OS X
+- installs Mac OS X CommandLineTools for Xcode if not available and the user is using the 'sudo' (non-'conda') method of install (might or might not be considered a 'feature', but it's necessary if you want to use Python virtualenvs on Mac OS X)
 
 
 Examples
