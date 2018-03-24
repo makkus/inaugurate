@@ -76,21 +76,31 @@
 #
 # LUCI_TEMPLATE_PLACEHOLDER
 
+# Example hardcoded default flag
+#
+# NO_EXEC=true
 
+# Example default flag
+#
+# if [ -z "$NO_EXEC" ]; then
+#    NO_EXEC=true
+# fi
 
-DEFAULT_PROFILE="freckles"
-# conda
-DEFAULT_PROFILE_CONDA_PYTHON_VERSION="2.7"
-DEFAULT_PROFILE_CONDA_DEPENDENCIES="pip cryptography pycrypto git virtualenv"
-DEFAULT_PROFILE_EXECUTABLES_TO_LINK="freckles frecklecute freckelize freckfreckfreck frankentree inaugurate frocker"
-DEFAULT_PROFILE_EXTRA_EXECUTABLES="nsbl nsbl-tasks nsbl-playbook ansible ansible-playbook ansible-galaxy git"
-# deb
-DEFAULT_PROFILE_DEB_DEPENDENCIES="curl build-essential git python-dev python-virtualenv virtualenv libssl-dev libffi-dev"
-# rpm
-DEFAULT_PROFILE_RPM_DEPENDENCIES="wget git python-virtualenv openssl-devel gcc libffi-devel python-devel"
-# pip requirements
-DEFAULT_PROFILE_PIP_DEPENDENCIES="freckles"
-DEFAULT_PROFILE_ENV_NAME="freckles"
+# Example default profile
+#
+# DEFAULT_PROFILE="freckles"
+# # conda
+# DEFAULT_PROFILE_CONDA_PYTHON_VERSION="2.7"
+# DEFAULT_PROFILE_CONDA_DEPENDENCIES="pip cryptography pycrypto git virtualenv"
+# DEFAULT_PROFILE_EXECUTABLES_TO_LINK="freckles frecklecute freckelize freckfreckfreck frankentree inaugurate frocker"
+# DEFAULT_PROFILE_EXTRA_EXECUTABLES="nsbl nsbl-tasks nsbl-playbook ansible ansible-playbook ansible-galaxy git"
+# # deb
+# DEFAULT_PROFILE_DEB_DEPENDENCIES="curl build-essential git python-dev python-virtualenv virtualenv libssl-dev libffi-dev"
+# # rpm
+# DEFAULT_PROFILE_RPM_DEPENDENCIES="wget git python-virtualenv openssl-devel gcc libffi-devel python-devel"
+# # pip requirements
+# DEFAULT_PROFILE_PIP_DEPENDENCIES="freckles"
+# DEFAULT_PROFILE_ENV_NAME="freckles"
 
 function init_vars
 {
@@ -875,7 +885,8 @@ function main
             ENV_NAME="$DEFAULT_PROFILE_ENV_NAME"
         else
             if [ -z "$DEFAULT_PROFILE" ]; then
-                output "  - no default inaugurate profile defined"
+                log "  - no default inaugurate profile defined"
+                #output "  - no default inaugurate profile defined"
             else
                 output "  - no matching executable mapping found in inaugurate default profile '$DEFAULT_PROFILE'"
             fi
