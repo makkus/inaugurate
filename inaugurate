@@ -111,6 +111,8 @@ function init_vars
         fi
     fi
 
+    INAUGURATE_USER_GROUP=$(id -ng ${INAUGURATE_USER})
+
     if [ "$root_permissions" = true ]; then
         if [ "$FORCE_CONDA" = true ] && [ -z "$SUDO_USER" ]; then
             install_method="conda"
@@ -696,7 +698,7 @@ function install_conda_non_root {
     mkdir -p "$INAUGURATE_OPT"
     mkdir -p "$INAUGURATE_BASE_DIR"
 
-    chown -R "$INAUGURATE_USER" "$INAUGURATE_BASE_DIR"
+    chown -R "$INAUGURATE_USER:$INAUGURATE_USER_GROUP" "$INAUGURATE_BASE_DIR"
 
     output "  * installing conda"
     {
@@ -845,22 +847,23 @@ function main
         mkdir -p "$LOCAL_BIN_PATH"
         mkdir -p "$INAUGURATE_BIN_PATH"
         if [[ $install_method == "sudo" ]]; then
-            chown -R "$INAUGURATE_USER" "$CHOWN_BASE_DIR"
-            chown -R "$INAUGURATE_USER" "$BASE_DIR"
-            chown -R "$INAUGURATE_USER" "$TEMP_DIR"
-            chown -R "$INAUGURATE_USER" "$LOCAL_BIN_PATH"
-            chown -R "$INAUGURATE_USER" "$INAUGURATE_BIN_PATH"
-            chown -R "$INAUGURATE_USER" "$INAUGURATE_OPT"
+            chown -R "$INAUGURATE_USER:$INAUGURATE_USER_GROUP" "$BASE_DIR"
+            chown -R "$INAUGURATE_USER:$INAUGURATE_USER_GROUP" "$TEMP_DIR"
+            chown -R "$INAUGURATE_USER:$INAUGURATE_USER_GROUP" "$LOCAL_BIN_PATH"
+            chown -R "$INAUGURATE_USER:$INAUGURATE_USER_GROUP" "$INAUGURATE_BIN_PATH"
+            chown -R "$INAUGURATE_USER:$INAUGURATE_USER_GROUP" "$INAUGURATE_OPT"
         fi
 
         install_inaugurate "$install_method"
         output ""
 
+        if [[ $install_method == "sudo" ]]; then
+            chown -R "$INAUGURATE_USER:$INAUGURATE_USER_GROUP" "$CHOWN_BASE_DIR"
+        fi
+
         if [[ ! "$SELF_DESTRUCT" = true && ! "$NO_ADD_PATH" = true ]]; then
             add_inaugurate_path
         fi
-
-        #inaugurate "$1"
 
         shift
         output ""
