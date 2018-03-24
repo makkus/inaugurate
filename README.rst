@@ -261,7 +261,7 @@ Here's a list of environment variables that can be used to change *inaugurate's*
     if set to true, ``PIP_INDEX_URL`` and ``CONDA_CHANNEL`` will be set to urls that are faster when used within China as they are not outside the GFW, also, this will try to set debian mirrors to ones within China (if host machine is Debian, and *inaugurate* is run with sudo permissions) -- this is really only a convenience setting I used when staying in Beijing, but I imagine it might help users in China -- if there ever will be any
 
 *INSTALL_COMMAND_LINE_TOOLS*
-    if set to true and run with elevated permissions on Mac OS X, inaugurate will make sure that the Mac OS X CommandLineTools are installed. this was a required before inaugurate used the *get-pip.py* script to install pip on Mac
+    if set to true and run with elevated permissions on Mac OS X, inaugurate will make sure that the Mac OS X CommandLineTools are installed. this was required before inaugurate used the *get-pip.py* script to install pip on Mac
 
 How does this work? What does it do?
 ------------------------------------
