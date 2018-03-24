@@ -289,7 +289,7 @@ Obviously, this won't be in effect after your first *inaugurate* run, as the ``.
 
     source $HOME/.profile
 
-Adding the *inaugurate* path to ``.profile`` can be disable by specifying the ``NO_ADD_PATH`` environment variable when running *inaugurate*:
+Adding the *inaugurate* path to ``.profile`` can be disabled by specifying the ``NO_ADD_PATH`` environment variable when running *inaugurate*:
 
 .. code-block::
 
@@ -302,7 +302,7 @@ package install locations
 
 Everything is installed in the users home directory, under ``$HOME/.local/share/inaugurate``. Each application you 'inaugurate' gets its own environemnt (a python *virtualenv* in case of a *sudo* install, or a `conda environment <https://conda.io/docs/user-guide/tasks/manage-environments.html>`_ otherwise). The executables that are specified in the *inaugurate* app description (for example: https://github.com/inaugurate/store/blob/master/ansible) will be linked into the folder ``$HOME/.local/bin``.
 
-By containing everything under ``$HOME/.local/share/inaugurate``, deleting this folder will delete all traces of *inaugurate* and 'inaugurated' apps (except for the added ``PATH`` in ``.profile``) and free up all space (except for potentially installed system dependency packages).
+Because everything is contained under ``$HOME/.local/share/inaugurate``, deleting this folder will delete all traces of *inaugurate* and 'inaugurated' apps (except for the added ``PATH`` in ``.profile``) and free up all space (except for potentially installed system dependency packages).
 
 As mentioned, if invoked using ``sudo`` (or as user *root*), *inaugurate* will try to install dependencies using system packages (and python packages using virtualenv), otherwise *conda* is used to perform an entirely non-root install. This is the reason why both cases differ slightly in the folders that are created and used:
 
@@ -414,14 +414,14 @@ That being said, you can download the `inaugurate <https://raw.githubusercontent
 
 I'd argue it's slightly better to have one generic, widely-used (not that *inaugurate* is widely-used at the moment, mind you) and looked upon script, that uses easy to parse configurations for the stuff it installs, than every app out there writing their own bootstrap shell script. *inaugurate* (possibly in combination with *frecklecute* to support more advanced setup tasks) could be such a thing, but I'd be happy if someone else writes a better alternative. It's more practical to not have to read a whole bash script every time you want to bootstrap a non-trivial-to-install application, is all I'm saying.
 
-And even if you don't agree with any of this, you could still use a self-hosted *inaugurate* script for your local or in-house bootstrapping needs. If you have such a need, of course :-)
+And even if you don't agree with any of this, you could still use a self-hosted *inaugurate* script for your local or in-house bootstrapping needs. If you have such needs :-)
 
 Since I'm not particularly interested to have the old 'curly bootstrap scripts are evil'-discussion, here are a few links to arguments already made, and fights already fought:
 
 - https://news.ycombinator.com/item?id=12766049
 - https://sandstorm.io/news/2015-09-24-is-curl-bash-insecure-pgp-verified-install
 
-I'm certain *inaugurate*, as it currently is, could be improved upon, esp. in terms of security and trustworthiness. For example add some sort of easy-to-use gpg-signing feature. As this is only one of a few minor side-projects for me, I don't have the time to spend a lot of time on it at the moment. If anybody feels like contributing I'd be more than happy though!
+I'm certain *inaugurate*, as it currently is, could be improved upon, esp. in terms of security and trustworthiness. For example add some sort of easy-to-use gpg-signing feature. As this is only one of a few minor side-projects for me, I can't really spend a lot of time on it at the moment. If anybody feels like contributing I'd be more than happy though!
 
 Create your own, custom *inaugurate* script
 -------------------------------------------
