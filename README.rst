@@ -2,7 +2,7 @@
 inaugurate
 ==========
 
-*inaugurate* is a generic bootstrap script that supports the (optional) direct execution of the application that is being bootstrapped. You can use it from it's 'official' url with either a hosted or your own, local application description (as explained below):
+*inaugurate* is a generic bootstrap script that supports the (optional) direct execution of the application that is being bootstrapped. You can use it from it's 'official' url with either a hosted, or your own, local application description (as explained below):
 
 .. code-block:: console
 
@@ -12,7 +12,7 @@ or download it, optionally customize it (change defaults, add your own applicati
 
 *inaugurate* also comes with an '`official app store <https://github.com/inaugurate/store>`_', although that is, for now at least, mostly to demonstrate it's 'app-store' feature. That app-store, of course, can also be customized and self-hosted.
 
-At the moment, *inaugurate* is most useful to bootstrap pip packages that have non-Python system dependencies without needing to use root/*sudo* permissions at all (which is done by using conda_). I reckon it wouldn't be too hard to extend it to support other types of installs/languages though. Ping me if you have suggestions/use-cases.
+At the moment, *inaugurate* is mainly useful if you want to (cross-\*NIX-platform) bootstrap pip packages that have non-Python, system dependencies, without the need to have root/*sudo* permissions (which is accomplished by using conda_). Admittedly, a rather limited scope for a self-proclaimed 'generic' thing :-) . I reckon it wouldn't be too hard to extend it to support other types of installs/languages though. Ping me if you have suggestions/use-cases.
 
 For more details, check the relevant sections below:
 
@@ -45,13 +45,13 @@ Here *inaugurate* executes the application once it's installed (not doing anythi
 
    ❯ curl https://inaugurate.sh | NO_EXEC=true bash -s -- frecklecute
 
-Of course, we can also use ``wget`` instead of ``curl``:
+Of course, we can also use ``wget`` if ``curl`` is not available on our system:
 
 .. code-block:: console
 
    ❯ wget -O - https://inaugurate.sh | SELF_DESTRUCT=true bash -s -- frecklecute --help
 
-In this last example, *inaugurate* will delete itself and the application it just installed after that application ran. Again, this might for example be useful if you build a container, and want the end-product be as slim as possible.
+In this last example, *inaugurate* will delete itself and the application it just installed after that application ran. This might be useful, for example, if you build a container, and want the end-product be as slim as possible.
 
 By default, *inaugurate* uses conda_ to bootstrap the desired application into the users home directory, without needing *sudo*/root permissions. The user can opt to use *sudo* though, in which case native systems packages will be installed, and Python packages are installed inside a (individually created) virtualenv_. This would look like:
 
@@ -70,10 +70,11 @@ Features
 - supports 'non-root'-permission installs (via conda_)
 - has no dependencies except for either ``curl`` or ``wget`` (and bzip2 when using *conda*)
 - creates seperate environments for each package it installs (either via python virtualenv or conda)
-- has it's own 'official' app_store_, or lets you use your own local one
-- easily customizable, so you can host it yourself
+- has it's own 'official' app_store_, or lets you use your own, local one
+- can be self-hosted
+- is easily customizable, so can be used for your own application for which you want to provide a bootstrap script for
 - supports Debian-, RedHat- based Linux distros, as well as Mac OS X
-- can, optionally, install Mac OS X CommandLineTools for Xcode
+- can, optionally, also install Mac OS X CommandLineTools for Xcode
 
 
 Description
@@ -81,7 +82,7 @@ Description
 
 *inaugurate* was written for freckles_ to enable 'one-line' bootstrap of whole working environments. It turned out to be fairly easy to make it more generic, so it got its own project here. *inaugurate* (obviously) is not useful for simple cases where you just need to install an application, in 95% of all cases you can do that by just using your system package manager (``apt install the-package-you-want``).
 
-Some applications require a bit more effort to install (e.g. ansible_ using pip). While still being fairly trivial, you need to install some system dependencies, then, if you want to do it properly, create a virtualenv_ and ``pip install`` the package into it. Those are the cases where *inaugurate* is of some use as it can do those things automatically.
+Some applications require a bit more effort to install (e.g. ansible_ using pip, although that is getting easier as well). While still being fairly trivial, you need to install some system dependencies, then, if you want to do it properly, create a virtualenv_ and ``pip install`` the package into it. Those are the cases where *inaugurate* is of some use as it can do those things automatically.
 
 The main reason for writing *inaugurate* was the aforementioned 'one-line' bootstrap though. Admittedly, I have no idea how often this can be of use for the general public, but I figure its a basic enough pattern that I haven't seen implemented elsewhere (yet -- also I might not have looked well enough), at least not in a generic fashion, so I imagine there are a few situations where it will make sense. You'll know it when you see it, sorta thing.
 
@@ -168,10 +169,10 @@ Here's what the different vars mean:
 *PIP_DEPENDENCIES*
     the python packages to install in the conda or virtualenv environment
 
-downloading *inaugurate.sh*
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+downloading *inaugurate*
+^^^^^^^^^^^^^^^^^^^^^^^^
 
-As already mentioned, you can either use ``curl`` or ``wget`` to download *inaugurate.sh*. Actually, any other tool you have at hand that can download files from the internet, and pipe out their content. I focus on ``curl`` and ``wget`` since the likelyhood one of them is installed is highest.
+As already mentioned, you can either use ``curl`` or ``wget`` to download *inaugurate.sh*. Actually, any other tool you have at hand that can download files from the internet, and pipe out their content. I focus on ``curl`` and ``wget`` since the likelyhood one of them being installed is highest.
 
 curl
 ++++
@@ -214,7 +215,7 @@ I haven't figured out yet how to do that with sudo though.
 sudo/non-sudo
 ^^^^^^^^^^^^^
 
-One of the main features of *inaugurate* is the option to install whatever you want to install without having to use ``root`` or ``sudo`` permissions. This only works for applications that are available via conda_, or python packages.
+One of the main features of *inaugurate* is providing the option to install, whatever you want to install, without having to use ``root`` or ``sudo`` permissions. This only works for applications that are available via conda_, or python packages.
 
 The way to tell *inaugurate* whether to use *conda* or not is by either calling it via sudo (or as ``root`` user) or as a 'normal' user. In the former case *inaugurate* will install system packages, in the latter it will install conda (if not already available) and contain all other dependencies within a *conda* environment.
 
@@ -265,7 +266,7 @@ Here's a list of environment variables that can be used to change *inaugurate's*
 How does this work? What does it do?
 ------------------------------------
 
-*inaugurate* is a `shell script <https://github.com/makkus/inaugurate/blob/master/inaugurate.sh>`_ that, in most cases, will be downloaded via ``curl`` or ``wget`` (obviously you can just download it once and invoke it directly). It's behaviour can be controlled by environment variables (see examples above).
+*inaugurate* is a `shell script <https://github.com/makkus/inaugurate/blob/master/inaugurate>`_ that, in most cases, will be downloaded via ``curl`` or ``wget`` (obviously you can just download it once and invoke it directly). It's behaviour can be controlled by environment variables (see examples above).
 
 *inaugurate* touches two things when it is run. It adds a line to ``$HOME/.profile``, and it creates a folder ``$HOME/.local/share/inaugurate`` where it puts all the application data it installs. In addition, if invoked using root permissions, it will also potentially install dependencies via system packages.
 
@@ -284,7 +285,7 @@ By default, *inaugurate* adds those lines to your ``$HOME/.profile`` (which will
 
 Obviously, this won't be in effect after your first *inaugurate* run, as the ``.profile`` file wasn't read since then. You can 'force' picking up the new ``PATH`` by either logging out and logging in again, or sourcing ``.profile``:
 
-.. code-block
+.. code-block::
 
     source $HOME/.profile
 
@@ -310,15 +311,33 @@ As mentioned, if invoked using ``sudo`` (or as user *root*), *inaugurate* will t
 
 .. code-block:: console
 
-    .local/
+   .local/
     ├── bin
-    └── inaugurate
-        ├── bin
-        ├── logs
-        ├── tmp
-        └── virtualenvs
-            └── inaugurate
-            └── <other app>
+    │    ├── <linked_executable_1>
+    │    ├── <linked_executable_2>
+    │    ├── <linked_executable_3>
+    │    ├── <linked_executable_4>
+    │   ...
+    │   ...
+    │
+    ├── share
+        └── inaugurate
+             ├── bin
+             ├── logs
+             ├── tmp
+             └── virtualenvs
+                 ├── <one app>
+                 │      └──bin
+                 │          ├── <link_target_1>
+                 │          ├── <link_target_2>
+                 │         ...
+                 │         ...
+                 ├── <other app>
+                 │      └──bin
+                 │          ├── <link_target_3>
+                 │          ├── <link_target_4>
+                 │         ...
+                 │         ...
 
 In this case, new application environments are created under ``.local/share/inaugurate/virtualenvs``. So, for example, if you want to activate one of those virtualenvs (something you usually don't need to do as the executables you probably want are all linked into ``.local/bin`` which is in your ``PATH`` by now), you can do:
 
@@ -338,28 +357,40 @@ deactivate it issuing:
 .. code-block:: console
 
    .local/
-   ├── bin
-   │    ├── <linked_executable_1>
-   │    ├── <linked_executable_1>
-   │   ...
-   │   ...
-   │
-   ├── share
-       └── inaugurate
-           ├── bin
-           ├── conda
-           │   ├── bin
-           │   ├── conda-meta
-           │   ├── envs
-           │   │   └── inaugurate
-           │   │   └── <other app>
-           │   ├── etc
-           │   ├── include
-           │   ├── lib
-           │   ├── pkgs
-           │   ├── share
-           │   └── ssl
-           └── logs
+    ├── bin
+    │    ├── <linked_executable_1>
+    │    ├── <linked_executable_2>
+    │    ├── <linked_executable_3>
+    │    ├── <linked_executable_4>
+    │   ...
+    │   ...
+    │
+    ├── share
+        └── inaugurate
+            ├── bin
+            ├── conda
+            │   ├── bin
+            │   ├── conda-meta
+            │   ├── envs
+            │   │   ├── <one app>
+            │   │   │      └──bin
+            │   │   │          ├── <link_target_1>
+            │   │   │          ├── <link_target_2>
+            │   │   │         ...
+            │   │   │         ...
+            │   │   ├── <other app>
+            │   │          └──bin
+            │   │              ├── <link_target_3>
+            │   │              ├── <link_target_4>
+            │   │             ...
+            │   │             ...
+            │   ├── etc
+            │   ├── include
+            │   ├── lib
+            │   ├── pkgs
+            │   ├── share
+            │   └── ssl
+            └── logs
 
 Conda app environments can be found under ``.local/share/inaugurate/conda/envs``. In this case, if you'd wanted to activate a specific conda environment (again, usually you don't need to do this), you can do:
 
@@ -379,13 +410,13 @@ Is this secure?
 
 What? Downloading and executing a random script from the internet? Duh.
 
-That being said, you can download the `inaugurate.sh <https://raw.githubusercontent.com/makkus/inaugurate/master/inaugurate.sh>`_ script and host it yourself on github (or somewhere else). If you then only use app descriptions locally (or, as those app descriptions are fairly easy to parse and understand, you read the ones the are hosted on the 'official' inaugurate app_store_) you have the same sort of control you'd have if you'd do all the things *inaugurate* does manually.
+That being said, you can download the `inaugurate <https://raw.githubusercontent.com/makkus/inaugurate/master/inaugurate>`_ script and host it yourself on github (or somewhere else). If you then only use app descriptions locally (or, as those app descriptions are fairly easy to parse and understand, you read the ones the are hosted on the 'official' inaugurate app_store_) you have the same sort of control you'd have if you'd do all the things *inaugurate* does manually.
 
 I'd argue it's slightly better to have one generic, widely-used (not that *inaugurate* is widely-used at the moment, mind you) and looked upon script, that uses easy to parse configurations for the stuff it installs, than every app out there writing their own bootstrap shell script. *inaugurate* (possibly in combination with *frecklecute* to support more advanced setup tasks) could be such a thing, but I'd be happy if someone else writes a better alternative. It's more practical to not have to read a whole bash script every time you want to bootstrap a non-trivial-to-install application, is all I'm saying.
 
 And even if you don't agree with any of this, you could still use a self-hosted *inaugurate* script for your local or in-house bootstrapping needs. If you have such a need, of course :-)
 
-Since' I'm not particularly interested to have the 'curly bootstrap scripts are evil'-discussion, here are a few links to arguments already made, and fights already fought:
+Since I'm not particularly interested to have the old 'curly bootstrap scripts are evil'-discussion, here are a few links to arguments already made, and fights already fought:
 
 - https://news.ycombinator.com/item?id=12766049
 - https://sandstorm.io/news/2015-09-24-is-curl-bash-insecure-pgp-verified-install
@@ -403,7 +434,7 @@ Set your own application details
 
 If you want to adapt *inaugurate* for your own application, you can do that by adding the following variables to *inaugurate* (read the comments in the file to find the best place for them):
 
-.. code-block: shell
+.. code-block:: shell
 
     DEFAULT_PROFILE="freckles"
     # conda
@@ -419,14 +450,14 @@ If you want to adapt *inaugurate* for your own application, you can do that by a
     DEFAULT_PROFILE_PIP_DEPENDENCIES="freckles"
     DEFAULT_PROFILE_ENV_NAME="freckles"
 
-The most important thing to do is to have a ``DEFAULT_PROFILE`` variable set to the name of your package or executable. This indicates to *inaugurate* that a custom application profile is set. If the executable name that is used by the user in the *inaugurate* command-line can be found in the ``DEFAULT_PROFILE_EXECUTABLES_TO_LINK`` variable value, it'll use the custom profile. If not, it'll try the local and remote app-stores as described above.
+The most important thing to do is to have a ``DEFAULT_PROFILE`` variable set to the name of your package or executable. This indicates to *inaugurate* that a custom application profile is set. If the executable name that is used by the user in the *inaugurate* command-line can be found in the ``DEFAULT_PROFILE_EXECUTABLES_TO_LINK`` variable value (which, usually, would probably only contain one executable), it'll use the custom profile. If not, it'll try the local and remote app-stores as described above.
 The meaning of the other vars is the same as is described in `apps descriptions`_ (with a prepended ``DEFAULT_PROFILE``).
 
 
 Hardcode flags/config options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If you want to prevent the user to change or set one of the available `environment variables`_, you can override those like so:
+If you want to prevent the user to change or set one of the available `environment variables`_, you can override those like so, in the top part of the *inaugurate* file:
 
 .. code-block::
 
@@ -438,7 +469,7 @@ Simple, nothing more to it.
 Change default behaviour
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-If you want to change the *inaugurate* defaults for one or some of the available `environment variables`_, add code like this:
+If you want to change the *inaugurate* defaults for one or some of the available `environment variables`_, add code like this to the *inaugurate* file:
 
 .. code-block::
 
