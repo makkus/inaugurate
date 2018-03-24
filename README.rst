@@ -12,6 +12,8 @@ or download it, optionally customize it (change defaults, add your own applicati
 
 *inaugurate* also comes with an '`official app store <https://github.com/inaugurate/store>`_', although that is, for now at least, mostly to demonstrate it's 'app-store' feature. That app-store, of course, can also be customized and self-hosted.
 
+At the moment, *inaugurate* is most useful to bootstrap pip packages that have non-Python system dependencies without needing to use root/*sudo* permissions at all (which is done by using conda_). I reckon it wouldn't be too hard to extend it to support other types of installs/languages though. Ping me if you have suggestions/use-cases.
+
 For more details, check the relevant sections below:
 
 .. contents::
