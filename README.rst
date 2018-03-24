@@ -2,7 +2,7 @@
 inaugurate
 ==========
 
-*inaugurate* is a generic bootstrap script that supports the (optional) direct execution of the application that is being bootstrapped. You can use it from it's 'official' url with either a hosted, or your own, local application description (as explained below):
+*inaugurate* is a generic bootstrap script that optionally supports the immediate execution of the application that is being bootstrapped. You can use it from it's 'official' url with either a hosted, or your own, local application description (as explained below):
 
 .. code-block:: console
 
