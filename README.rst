@@ -28,7 +28,7 @@ So here's an example on how you 'inaugurate' frecklecute_, which comes bundled w
 
    curl https://inaugurate.sh | bash -s -- frecklecute --help
 
-As mentioned, *inaugurate* also executes the application once it's installed, which is why the ``--help`` option is provided in this example. This behaviour can be turned off, if needed:
+As mentioned, *inaugurate* also executes the application once it's installed, which is why the ``--help`` option is provided in this example. This behaviour (among others) can be turned off, if needed, with the help of an environment variable:
 
 .. code-block:: console
 
