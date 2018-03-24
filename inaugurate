@@ -24,21 +24,27 @@
 #                    https://github.com/makkus/inaugurate
 #
 #
-#                                            version: 1.2
+#                                            version: 1.3
 #
 #
 # settings to control inaugurates behaviour (default is false or 'not set' for all those)
 # ---------------------------------------------------------------------------------------
 #
+# flags
+#
 # NO_ADD_PATH=true      # if set to true, ~/.local/bin won't be added to .profile
 # NO_EXEC=true          # if set to true, the 'inaugurated' application won't be run
 # FORCE_CONDA=false     # if set to true, conda will be used even when run as 'root' or using 'sudo'
-#
+# FORCE_SUDO=false      # if set to true, inaugurate will not run if started without sudo
+# FORCE_NON_SUDO=false  # if set to true, inaugurate will not run if started with sudo
 # SELF_DESTRUCT=true    # if set to true, after the 'inaugurated' application is run, the folder(s)
 #                       # used in the installation process are deleted again. the system packages
 #                       # used in that process (if using elevated permissions) as well as everything
 #                       # installed in the run will still be present
 #
+# install config
+#
+# INSTALL_BASE_DIR=""   # if set, inaugurate will install into the specified directory
 # PIP_INDEX_URL=""      # if $PIP_INDEX_URL is set, a $HOME/.pip/pip.conf file is created
 #                       # and the provided index_url is set (only if the file doesn't exists yet)
 #
@@ -54,12 +60,20 @@
 # script start
 # ============
 
-# TEMPLATE_PLACEHOLDER
-
 # Exit codes:
 # 2: application configuration error
 # 3: execution error somewhere in the bootstrap pipeline
 # 6: platform or package manager not supported
+# 7: script run with wrong permissions
+
+
+# set hardcoded environment variables/defaults here, or use
+# luci to generate your customized inaugurate script:
+#
+# https://github.com/makkus/luci
+#
+# LUCI_TEMPLATE_PLACEHOLDER
+
 
 function init_vars
 {
@@ -110,12 +124,28 @@ function init_vars
         install_method="conda"
     fi
 
+    if [[ "$FORCE_SUDO" = true && "$install_method" == "conda" && "$INAUGURATE_USER" != "root" ]]; then
+        (>&2 echo "This bootstrap script needs to be run with elevated permissions. Exiting...")
+        exit 7
+    fi
+
+    if [[ "$FORCE_NON_SUDO" = true && "$install_method" == "sudo" ]]; then
+        (>&2 echo "This bootstrap script needs to be run without sudo. Exiting...")
+        exit 7
+    fi
+
     # General variables
     PROGNAME="inaugurate"
 
     INAUGURATE_USER_HOME="`eval echo ~$INAUGURATE_USER`"
     INAUGURATE_BASE_DIR="$INAUGURATE_USER_HOME/.inaugurate"
-    BASE_DIR="$INAUGURATE_USER_HOME/.local/share"
+    if [ -z "$INSTALL_BASE_DIR" ]; then
+        BASE_DIR="$INAUGURATE_USER_HOME/.local/share"
+        CHOWN_BASE_DIR="$INAUGURATE_USER_HOME/.local"  # this directory will be chown'ed to the $INAUGURATE_USER in case of sudo, set to $BASE_DIR if applicable
+    else
+        BASE_DIR="$INSTALL_BASE_DIR"
+        CHOWN_BASE_DIR="$INSTALL_BASE_DIR"
+    fi
 
     INAUGURATE_OPT="$BASE_DIR/inaugurate"
     INSTALL_LOG_DIR="$INAUGURATE_OPT/logs/"
@@ -815,6 +845,7 @@ function main
         mkdir -p "$LOCAL_BIN_PATH"
         mkdir -p "$INAUGURATE_BIN_PATH"
         if [[ $install_method == "sudo" ]]; then
+            chown -R "$INAUGURATE_USER" "$CHOWN_BASE_DIR"
             chown -R "$INAUGURATE_USER" "$BASE_DIR"
             chown -R "$INAUGURATE_USER" "$TEMP_DIR"
             chown -R "$INAUGURATE_USER" "$LOCAL_BIN_PATH"
