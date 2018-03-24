@@ -31,6 +31,7 @@
 # ---------------------------------------------------------------------------------------
 #
 # flags
+# ^^^^^
 #
 # NO_ADD_PATH=true      # if set to true, ~/.local/bin won't be added to .profile
 # NO_EXEC=true          # if set to true, the 'inaugurated' application won't be run
@@ -43,6 +44,7 @@
 #                       # installed in the run will still be present
 #
 # install config
+# ^^^^^^^^^^^^^^
 #
 # INSTALL_BASE_DIR=""   # if set, inaugurate will install into the specified directory
 #
@@ -56,6 +58,12 @@
 #                       # both pip and conda to point to mirrors within China, and it tries to also
 #                       # change to Debian mirrors in China (if applicable -- run with elevated
 #                       # permissions and on a Debian platform)
+#
+# misc
+# ^^^^
+#
+# INSTALL_COMMAND_LINE_TOOLS=false   # legacy option for Mac OS X, installs Mac OS X CommandLineTools
+#                                      package which was necessary for inaugurate with 'sudo' before
 
 
 # ============
@@ -103,9 +111,9 @@
 # DEFAULT_PROFILE_EXECUTABLES_TO_LINK="freckles frecklecute freckelize freckfreckfreck frankentree inaugurate frocker"
 # DEFAULT_PROFILE_EXTRA_EXECUTABLES="nsbl nsbl-tasks nsbl-playbook ansible ansible-playbook ansible-galaxy git"
 # # deb
-# DEFAULT_PROFILE_DEB_DEPENDENCIES="curl build-essential git python-dev python-virtualenv virtualenv libssl-dev libffi-dev"
+# DEFAULT_PROFILE_DEB_DEPENDENCIES="curl build-essential git python-dev python-pip python-virtualenv virtualenv libssl-dev libffi-dev"
 # # rpm
-# DEFAULT_PROFILE_RPM_DEPENDENCIES="wget git python-virtualenv openssl-devel gcc libffi-devel python-devel"
+# DEFAULT_PROFILE_RPM_DEPENDENCIES="wget git python-pip python-virtualenv openssl-devel gcc libffi-devel python-devel"
 # # pip requirements
 # DEFAULT_PROFILE_PIP_DEPENDENCIES="freckles"
 # DEFAULT_PROFILE_ENV_NAME="freckles"
@@ -231,7 +239,7 @@ function init_vars
     INAUGURATE_RPM_DEPENDENCIES="wget git python-virtualenv openssl-devel gcc libffi-devel python-devel openssl-devel"
     # pip requirements
     INAUGURATE_PIP_DEPENDENCIES="inaugurate"
-
+    GET_PIP_URL="https://bootstrap.pypa.io/get-pip.py"
 
     # conda related variables
     CONDA_DOWNLOAD_URL_LINUX="https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh"
@@ -498,10 +506,20 @@ function install_commandlinetools {
 
 function install_inaugurate_mac_root {
     output '  * MacOS X-based system detected.'
-    install_commandlinetools
+    if [ "$INSTALL_COMMAND_LINE_TOOLS" = true ]; then
+        install_commandlinetools
+    fi
     output "  * installing pip & virtualenv"
     if ! command_exists pip; then
-        execute_log easy_install pip "Could not install pip"
+        output "    * downloading get-pip.py script from: $GET_PIP_URL"
+        download "$GET_PIP_URL" "$TEMP_DIR/get-pip.py"
+        if [ ! -s "$TEMP_DIR/get-pip.py" ]; then
+            error_output "Could not download get-pip.py script from '$GET_PIP_URL'. Exiting..."
+        fi
+
+        output "    * installing pip..."
+        execute_log python "$TEMP_DIR/get-pip.py" "Could not install pip"
+
     fi
     if ! command_exists virtualenv; then
         execute_log pip install virtualenv "Could not install virtualenv via pip"
