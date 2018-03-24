@@ -51,7 +51,7 @@ Of course, we can also use ``wget`` if ``curl`` is not available on our system:
 
    ❯ wget -O - https://inaugurate.sh | SELF_DESTRUCT=true bash -s -- frecklecute --help
 
-In this last example we use the ``SELF_DESTRUCT`` environment varialbe to instruct *inaugurate* to delete itself and the application it just installed after that application ran. This might be useful, for example, if you build a container, and want the end-product to be as slim as possible.
+In this last example we use the ``SELF_DESTRUCT`` environment variable to instruct *inaugurate* to delete itself and the application it just installed after that application ran. This might be useful, for example, if you build a container, and want the end-product to be as slim as possible.
 
 By default, *inaugurate* uses conda_ to bootstrap the desired application into the users home directory, without needing *sudo*/root permissions. The user can opt to use *sudo* though, in which case native systems packages will be installed, and Python packages are installed inside a (individually created) virtualenv_. This would look like:
 
