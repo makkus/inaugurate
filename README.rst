@@ -15,7 +15,7 @@ Features
 - has it's own 'official' app_store_, or lets you use your own local one
 - easily customizable, so you can host it yourself
 - supports Debian-, RedHat- based Linux distros, as well as Mac OS X
-- installs Mac OS X CommandLineTools for Xcode if not available and the user is using the 'sudo' (non-'conda') method of install (might or might not be considered a 'feature', but it's necessary if you want to use Python virtualenvs on Mac OS X)
+- can, optionally, install Mac OS X CommandLineTools for Xcode
 
 
 Examples
@@ -203,8 +203,17 @@ Here's a list of environment variables that can be used to change *inaugurate's*
 *FORCE_CONDA*
     if set to true and run as user 'root', *inaugurate* will use 'conda' (instead of system packages). This doesn't have any effect if used in combination with 'sudo'
 
+*FORCE_SUDO*
+    if set to true and not run as user 'root' or using 'sudo', inaugurate will not run
+
+*FORCE_NON_SUDO*
+    if set to true and run using 'sudo', inaugurate will not run
+
 *SELF_DESTRUCT*
     if set to true, *inaugurate* will delete everything it installed in this run (under ``$HOME/.local/share/inaugurate``)
+
+*INSTALL_BASE_DIR*
+    if set, inaugurate will install under the specified directory. if not set, default install dir is ``$HOME/.local/share/inaugurate``
 
 *PIP_INDEX_URL*
     if set, a file ``$HOME/.pip/pip.conf`` will be created, and the provided string will be set as as ``index-url`` (only if ``pip.conf`` does not exist already)
@@ -215,6 +224,8 @@ Here's a list of environment variables that can be used to change *inaugurate's*
 *CHINA*
     if set to true, ``PIP_INDEX_URL`` and ``CONDA_CHANNEL`` will be set to urls that are faster when used within China as they are not outside the GFW, also, this will try to set debian mirrors to ones withing China (if host machine is Debian, and *inaugurate* is run with sudo permissions) -- this is really only a convenience setting I used when staying in Beijing, but I imagine it might help users in China -- if there ever will be any
 
+*INSTALL_COMMAND_LINE_TOOLS*
+    if set to true and run with elevated permissions on Mac OS X, inaugurate will make sure that the Mac OS X CommandLineTools are installed. this was a required before inaugurate used the *get-pip.py* script to install pip on Mac
 
 How does this work? What does it do?
 ------------------------------------

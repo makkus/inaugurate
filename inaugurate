@@ -33,12 +33,12 @@
 # flags
 # ^^^^^
 #
-# NO_ADD_PATH=true      # if set to true, ~/.local/bin won't be added to .profile
-# NO_EXEC=true          # if set to true, the 'inaugurated' application won't be run
+# NO_ADD_PATH=false     # if set to true, ~/.local/bin won't be added to .profile
+# NO_EXEC=false         # if set to true, the 'inaugurated' application won't be run
 # FORCE_CONDA=false     # if set to true, conda will be used even when run as 'root' or using 'sudo'
 # FORCE_SUDO=false      # if set to true, inaugurate will not run if started without sudo
 # FORCE_NON_SUDO=false  # if set to true, inaugurate will not run if started with sudo
-# SELF_DESTRUCT=true    # if set to true, after the 'inaugurated' application is run, the folder(s)
+# SELF_DESTRUCT=self    # if set to true, after the 'inaugurated' application is run, the folder(s)
 #                       # used in the installation process are deleted again. the system packages
 #                       # used in that process (if using elevated permissions) as well as everything
 #                       # installed in the run will still be present
@@ -54,7 +54,7 @@
 # CONDA_CHANNEL=""      # if $CONDA_CHANNEL is set, a $HOME/.condarc file is created and the
 #                       # provided channel is set (only if the file doesn't exist yet)
 #
-# CHINA=true            # this is a convenience setting, if $CHINA is set to true, inaugurate sets
+# CHINA=false           # this is a convenience setting, if $CHINA is set to true, inaugurate sets
 #                       # both pip and conda to point to mirrors within China, and it tries to also
 #                       # change to Debian mirrors in China (if applicable -- run with elevated
 #                       # permissions and on a Debian platform)
