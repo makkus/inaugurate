@@ -84,7 +84,7 @@ Description
 
 Some applications require a bit more effort to install (e.g. ansible_ using pip, although that is getting easier as well). While still being fairly trivial, you need to install some system dependencies, then, if you want to do it properly, create a virtualenv_ and ``pip install`` the package into it. Those are the cases where *inaugurate* is of some use as it can do those things automatically.
 
-The main reason for writing *inaugurate* was the aforementioned 'one-line' bootstrap though. Admittedly, I have no idea how often this can be of use for the general public, but I figure its a basic enough pattern that I haven't seen implemented elsewhere (yet -- also I might not have looked well enough), at least not in a generic fashion. So I figured I might as well polish it a bit and put it up for other people to have a look. I imagine there are a few situations where it will make sense. You'll know it when you see it, sorta thing.
+The main reason for writing *inaugurate* was the aforementioned 'one-line' bootstrap though. Admittedly, I have no idea how often this can be of use for the general public, but I figure its a basic enough pattern that I haven't seen implemented elsewhere (yet -- also I might not have looked well enough), at least not in a generic fashion. So I thought I might as well polish it a bit and put it up for other people to have a look. I imagine there are a few situations where it will make sense. You'll know it when you see it, sorta thing.
 
 
 Usage
@@ -258,7 +258,7 @@ Here's a list of environment variables that can be used to change *inaugurate's*
     if set, a file ``$HOME/.condarc`` will be created, and the provided string will be set as the (sole) conda channel (only if ``.condarc`` does not exist yet)
 
 *CHINA*
-    if set to true, ``PIP_INDEX_URL`` and ``CONDA_CHANNEL`` will be set to urls that are faster when used within China as they are not outside the GFW, also, this will try to set debian mirrors to ones withing China (if host machine is Debian, and *inaugurate* is run with sudo permissions) -- this is really only a convenience setting I used when staying in Beijing, but I imagine it might help users in China -- if there ever will be any
+    if set to true, ``PIP_INDEX_URL`` and ``CONDA_CHANNEL`` will be set to urls that are faster when used within China as they are not outside the GFW, also, this will try to set debian mirrors to ones within China (if host machine is Debian, and *inaugurate* is run with sudo permissions) -- this is really only a convenience setting I used when staying in Beijing, but I imagine it might help users in China -- if there ever will be any
 
 *INSTALL_COMMAND_LINE_TOOLS*
     if set to true and run with elevated permissions on Mac OS X, inaugurate will make sure that the Mac OS X CommandLineTools are installed. this was a required before inaugurate used the *get-pip.py* script to install pip on Mac
