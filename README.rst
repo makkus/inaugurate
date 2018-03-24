@@ -2,15 +2,15 @@
 inaugurate
 ==========
 
-*inaugurate* is a generic bootstrap script that supports the (optional) direct execution of the application that is being bootstrapped. You can either use it from it's 'official' url:
+*inaugurate* is a generic bootstrap script that supports the (optional) direct execution of the application that is being bootstrapped. You can either use it from it's 'official' url with either a hosted or your own, local application description (as explained below):
 
 .. code-block:: console
 
    curl https://inaugurate.sh | bash -s -- <application> <args>
 
-or download it, optionally customize it (change defaults, add your own application), and host it yourself somewhere.
+or download it, optionally customize it (change defaults, add your own application to the script as a default), and host it yourself somewhere.
 
-*inaugurate* also comes with an '`official app store <https://github.com/inaugurate/store>`_', although that is, for now at least, mainly to demonstrate it's 'app-store' feature. That app-store, of course, can also be customized and self-hosted.
+*inaugurate* also comes with an '`official app store <https://github.com/inaugurate/store>`_', although that is, for now at least, mostly to demonstrate it's 'app-store' feature. That app-store, of course, can also be customized and self-hosted.
 
 For more details, check the relevant sections below:
 
@@ -356,6 +356,7 @@ and to deactivate:
 
    source deactivate
 
+
 Is this secure?
 ---------------
 
@@ -365,10 +366,20 @@ That being said, you can download the `inaugurate.sh <https://raw.githubusercont
 
 I'd argue it's slightly better to have one generic, widely-used (not that *inaugurate* is widely-used at the moment, mind you) and looked upon script, that uses easy to parse configurations for the stuff it installs, than every app out there writing their own bootstrap shell script. *inaugurate* (possibly in combination with *frecklecute* to support more advanced setup tasks) could be such a thing, but I'd be happy if someone else writes a better alternative. It's more practical to not have to read a whole bash script every time you want to bootstrap a non-trivial-to-install application, is all I'm saying.
 
+And even if you don't agree with any of this, you could still use a self-hosted *inaugurate* script for your local or in-house bootstrapping needs. If you have such a need, of course :-)
+
+Since' I'm not particularly interested to have the 'curly bootstrap scripts are evil'-discussion, here are a few links to arguments already made, and fights already fought:
+
+- https://news.ycombinator.com/item?id=12766049
+- https://sandstorm.io/news/2015-09-24-is-curl-bash-insecure-pgp-verified-install
+
+All that being said, I'm certain *inaugurate*, as it currently is, could be improved upon, esp. in terms of security and trustworthiness. For example add some sort of easy-to-use gpg-signing feature. As this is only one of a few minor side-projects for me, I don't have the time to spend a lot of time on it at the moment. If anybody feels like contributing I'd be more than happy though!
+
 Create your own, custom *inaugurate* script
 -------------------------------------------
 
 It's as easy as I could possibly make it to adapt the *inaugurate* shell script for your own application. In order to do this, you need to modify the beginning of the *inaugurate* script and include the appropriate variable declarations.
+
 
 Set your own application details
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
