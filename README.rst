@@ -12,7 +12,7 @@ Or you can download it, optionally customize it (change defaults, add your own a
 
 *inaugurate* also comes with an '`official app store <https://github.com/inaugurate/store>`_', although that is, for now at least, mostly to demonstrate it's 'app-store' feature. That app-store, of course, can also be customized and self-hosted.
 
-At the moment, *inaugurate* is mainly useful if you want to (cross-\*NIX-platform) bootstrap pip packages that have non-Python, system dependencies, without the need to have root/*sudo* permissions (which is accomplished by using conda_). Admittedly, a rather limited scope for a self-proclaimed 'generic' thing :-) . I reckon it wouldn't be too hard to extend it to support other types of installs/languages though. Ping me if you have suggestions/use-cases.
+At the moment, *inaugurate* is mainly useful if you want to (cross-\*NIX-platform) bootstrap Python packages (via *pip*) that have (non-Python) system dependencies, without the need to have root/*sudo* permissions (which is accomplished by using conda_). Admittedly, a rather limited scope for a self-proclaimed 'generic' thing :-) . I reckon it wouldn't be too hard to extend it to support other types of installs/languages though. Ping me if you have suggestions/use-cases.
 
 For more details, check the relevant sections below:
 
@@ -51,7 +51,7 @@ Of course, we can also use ``wget`` if ``curl`` is not available on our system:
 
    ❯ wget -O - https://inaugurate.sh | SELF_DESTRUCT=true bash -s -- frecklecute --help
 
-In this last example, *inaugurate* will delete itself and the application it just installed after that application ran. This might be useful, for example, if you build a container, and want the end-product be as slim as possible.
+In this last example, *inaugurate* will delete itself and the application it just installed after that application ran. This might be useful, for example, if you build a container, and want the end-product to be as slim as possible.
 
 By default, *inaugurate* uses conda_ to bootstrap the desired application into the users home directory, without needing *sudo*/root permissions. The user can opt to use *sudo* though, in which case native systems packages will be installed, and Python packages are installed inside a (individually created) virtualenv_. This would look like:
 
@@ -65,26 +65,26 @@ Features
 
 *inaugurate*...
 
-- lets you install (mainly python, but potentially also other) applications and run them in the same go
+- lets you install (mainly Python, but potentially also other) applications and run them in the same go
 - can (optionally) delete itself and the application it bootstrapped after the command was executed
 - supports 'non-root'-permission installs (via conda_)
-- has no dependencies except for either ``curl`` or ``wget`` (and bzip2 when using *conda*)
-- creates seperate environments for each package it installs (either via python virtualenv or conda)
+- has no dependencies except for either ``curl`` or ``wget`` (and ``bzip2`` when using *conda*)
+- creates seperate environments for each package it installs (either via Python virtualenv or conda)
 - has it's own 'official' app_store_, or lets you use your own, local one
 - can be self-hosted
-- is easily customizable, so can be used for your own application for which you want to provide a bootstrap script for
+- is easily customizable, so can be used for your own application for which you want to provide a bootstrap script
 - supports Debian-, RedHat- based Linux distros, as well as Mac OS X
-- can, optionally, also install Mac OS X CommandLineTools for Xcode
+- can -- optionally -- also install Mac OS X CommandLineTools for Xcode
 
 
 Description
 -----------
 
-*inaugurate* was written for freckles_ to enable 'one-line' bootstrap of whole working environments. It turned out to be fairly easy to make it more generic, so it got its own project here. *inaugurate* (obviously) is not useful for simple cases where you just need to install an application, in 95% of all cases you can do that by just using your system package manager (``apt install the-package-you-want``).
+*inaugurate* was written for freckles_ to enable 'one-line' bootstrap of whole working environments. It turned out to be fairly easy to make it more generic, so it got its own project here. *inaugurate* (obviously) is not useful for simple cases where you just need to install an application. In 95% of all cases you can do that by just using your system package manager (``apt install the-package-you-want``).
 
 Some applications require a bit more effort to install (e.g. ansible_ using pip, although that is getting easier as well). While still being fairly trivial, you need to install some system dependencies, then, if you want to do it properly, create a virtualenv_ and ``pip install`` the package into it. Those are the cases where *inaugurate* is of some use as it can do those things automatically.
 
-The main reason for writing *inaugurate* was the aforementioned 'one-line' bootstrap though. Admittedly, I have no idea how often this can be of use for the general public, but I figure its a basic enough pattern that I haven't seen implemented elsewhere (yet -- also I might not have looked well enough), at least not in a generic fashion, so I imagine there are a few situations where it will make sense. You'll know it when you see it, sorta thing.
+The main reason for writing *inaugurate* was the aforementioned 'one-line' bootstrap though. Admittedly, I have no idea how often this can be of use for the general public, but I figure its a basic enough pattern that I haven't seen implemented elsewhere (yet -- also I might not have looked well enough), at least not in a generic fashion. So I figured I might as well polish it a bit and put it up for other people to have a look. I imagine there are a few situations where it will make sense. You'll know it when you see it, sorta thing.
 
 
 Usage
@@ -295,7 +295,7 @@ Adding the *inaugurate* path to ``.profile`` can be disable by specifying the ``
 
     curl https://inaugurate.sh | NO_ADD_PATH=true bash -s -- cookiecutter gh:audreyr/cookiecutter-pypackage
 
-You'll have to figure out a way to manually add your inaugurated applications to your ``$PATH``, or you always specify the full path.
+You'll have to figure out a way to manually add your inaugurated applications to your ``$PATH``, or you always specify the full path (e.g. ``$HOME/.local/bin/cookiecutter``).
 
 package install locations
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -410,7 +410,7 @@ Is this secure?
 
 What? Downloading and executing a random script from the internet? Duh.
 
-That being said, you can download the `inaugurate <https://raw.githubusercontent.com/makkus/inaugurate/master/inaugurate>`_ script and host it yourself on github (or somewhere else). If you then only use app descriptions locally (or, as those app descriptions are fairly easy to parse and understand, you read the ones the are hosted on the 'official' inaugurate app_store_) you have the same sort of control you'd have if you'd do all the things *inaugurate* does manually.
+That being said, you can download the `inaugurate <https://raw.githubusercontent.com/makkus/inaugurate/master/inaugurate>`_ script and host it yourself on github (or somewhere else). If you then only use app descriptions locally and host your own 'app-store' (or, as those app descriptions are fairly easy to parse and understand, you read the ones the are hosted on the 'official' inaugurate app_store_) you have the same sort of control you'd have if you'd do all the things *inaugurate* does manually.
 
 I'd argue it's slightly better to have one generic, widely-used (not that *inaugurate* is widely-used at the moment, mind you) and looked upon script, that uses easy to parse configurations for the stuff it installs, than every app out there writing their own bootstrap shell script. *inaugurate* (possibly in combination with *frecklecute* to support more advanced setup tasks) could be such a thing, but I'd be happy if someone else writes a better alternative. It's more practical to not have to read a whole bash script every time you want to bootstrap a non-trivial-to-install application, is all I'm saying.
 
@@ -421,7 +421,7 @@ Since I'm not particularly interested to have the old 'curly bootstrap scripts a
 - https://news.ycombinator.com/item?id=12766049
 - https://sandstorm.io/news/2015-09-24-is-curl-bash-insecure-pgp-verified-install
 
-All that being said, I'm certain *inaugurate*, as it currently is, could be improved upon, esp. in terms of security and trustworthiness. For example add some sort of easy-to-use gpg-signing feature. As this is only one of a few minor side-projects for me, I don't have the time to spend a lot of time on it at the moment. If anybody feels like contributing I'd be more than happy though!
+I'm certain *inaugurate*, as it currently is, could be improved upon, esp. in terms of security and trustworthiness. For example add some sort of easy-to-use gpg-signing feature. As this is only one of a few minor side-projects for me, I don't have the time to spend a lot of time on it at the moment. If anybody feels like contributing I'd be more than happy though!
 
 Create your own, custom *inaugurate* script
 -------------------------------------------
