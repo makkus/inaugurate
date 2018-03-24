@@ -289,7 +289,7 @@ In this case, new application environments are created under ``.local/share/inau
 
 .. code-block:: console
 
-   source .local/share/inaugurate/virtualenvs/<app_name>/bin/activate
+   source $HOME/.local/share/inaugurate/virtualenvs/<app_name>/bin/activate
 
 deactivate it issuing:
 
@@ -324,7 +324,7 @@ Conda app environments can be found under ``.local/share/inaugurate/conda/envs``
 
 .. code-block:: console
 
-   source .local/bin/activate <env_name>
+   source $HOME/.local/share/inaugurate/conda/bin/activate <env_name>
 
 and to deactivate:
 
