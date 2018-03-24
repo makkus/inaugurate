@@ -328,6 +328,25 @@ That being said, you can download the `inaugurate.sh <https://raw.githubusercont
 
 I'd argue it's slightly better to have one generic, widely-used and looked upon script, that uses easy to parse configurations for the stuff it installs, than every app out there writing their own bootstrap shell script. *inaugurate* (possibly in combination with *frecklecute* to support more advanced setup tasks) could be such a thing, but I'd be happy if someone else writes a better alternative. It's more practical to not have to read a whole bash script every time you want to bootstrap a non-trivial-to-install application, is all I'm saying.
 
+Your own, custom *inaugurate* script
+------------------------------------
+
+It's as easy as I could possibly make it to adapt the *inaugurate* shell script for your own application.
+
+Set your own application details
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Hardcode flags/config options
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Change default behaviour
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+Use *luci* to create a option-url tree
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+TBD
+
 Supported platforms
 -------------------
 
