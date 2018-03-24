@@ -1012,4 +1012,6 @@ function main
 # script execution entry point
 # ============================
 
-main ${@}
+if [ "$BASH_SOURCE" == "$0" ]; then
+    main ${@}
+fi
