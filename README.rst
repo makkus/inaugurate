@@ -2,10 +2,57 @@
 inaugurate
 ==========
 
+*inaugurate* is a generic bootstrap script that supports the (optional) direct execution of the application that is being bootstrapped. You can either use it from it's 'official' url:
+
+.. code-block:: console
+
+   curl https://inaugurate.sh | bash -s -- <application> <args>
+
+or download it, optionally customize it (change defaults, add your own application), and host it yourself somewhere.
+
+*inaugurate* also comes with an '`official app store <https://github.com/inaugurate/store>`_', although that is, for now at least, mainly to demonstrate it's 'app-store' feature. That app-store, of course, can also be customized and self-hosted.
+
+For more details, check the relevant sections below:
+
+.. contents::
+   :depth: 1
+   :local:
+
+
+Examples
+--------
+
+So here's an example on how you 'inaugurate' frecklecute_, which comes bundled with freckles_ and lets you `run 'declarative' scripts <https://freckles.io/blog/writing-declarative-commandline-scripts>`_ (basically wrapped *ansible* playbooks). This is a good example of when it's useful to be able to install and run at the same time, since in some cases you might not ever need to run *frecklecute* again (for example, if you use it to build a Docker container within a ``Dockerfile``):
+
+.. code-block:: console
+
+   curl https://inaugurate.sh | bash -s -- frecklecute --help
+
+As mentioned, *inaugurate* also executes the application once it's installed, which is why the ``--help`` option is provided in this example. This behaviour can be turned off, if needed:
+
+.. code-block:: console
+
+   curl https://inaugurate.sh | NO_EXEC=true bash -s -- frecklecute
+
+Of course, we can also use ``wget`` instead of ``curl``:
+
+.. code-block:: console
+
+   wget -O - https://inaugurate.sh | SELF_DESTRUCT=true bash -s -- frecklecute --help
+
+In this last example, *inaugurate* will delete itself and the application it just installed after that application ran. Again, this might for example be useful if you build a container, and want the end-product be as slim as possible.
+
+By default, *inaugurate* uses conda_ to bootstrap the desired application into the users home directory, without needing *sudo*/root permissions. The user can opt to use *sudo* though, in which case native systems packages will be installed, and Python packages are installed inside a (individually created) virtualenv_. This would look like:
+
+.. code-block:: console
+
+   curl https://inaugurate.sh | sudo NO_EXEC=true bash -s -- frecklecute
+
+
 Features
 --------
 
-*inaugurate* is a generic bootstrap script that:
+*inaugurate*...
 
 - lets you install (mainly python, but potentially also other) applications and run them in the same go
 - can (optionally) delete itself and the application it bootstrapped after the command was executed
@@ -17,29 +64,6 @@ Features
 - supports Debian-, RedHat- based Linux distros, as well as Mac OS X
 - can, optionally, install Mac OS X CommandLineTools for Xcode
 
-
-Examples
---------
-
-So here's an example on how you 'inaugurate' frecklecute_, which comes bundled with freckles_ and lets you run 'declarative' scripts (basically wrapped *ansible* playbooks). This is a good example of when it's useful to be able to install and run at the same time, since in some cases you might not ever need to run *frecklecute* again (for example, if you use it to build a Docker container within a ``Dockerfile``):
-
-.. code-block:: console
-
-   curl https://inaugurate.sh | bash -s -- frecklecute --help
-
-As mentioned, *inaugurate* also executes the application once it's installed, which is why the ``--help`` option is provided in this example. This behaviour can be turned off, if needed:
-
-.. code-block:: console
-
-   curl https://inaugurate.sh | NO_EXEC=true bash -s -- frecklecute --help
-
-Of course, we can also use ``wget`` instead of ``curl``:
-
-.. code-block:: console
-
-   wget -O - https://inaugurate.sh | SELF_DESTRUCT=true bash -s -- frecklecute --help
-
-In this last example, *inaugurate* will delete itself and the application it just installed after that application ran. Again, this might for example be useful if you build a container, and want the end-product be as slim as possible.
 
 Description
 -----------
@@ -339,26 +363,67 @@ What? Downloading and executing a random script from the internet? Duh.
 
 That being said, you can download the `inaugurate.sh <https://raw.githubusercontent.com/makkus/inaugurate/master/inaugurate.sh>`_ script and host it yourself on github (or somewhere else). If you then only use app descriptions locally (or, as those app descriptions are fairly easy to parse and understand, you read the ones the are hosted on the 'official' inaugurate app_store_) you have the same sort of control you'd have if you'd do all the things *inaugurate* does manually.
 
-I'd argue it's slightly better to have one generic, widely-used and looked upon script, that uses easy to parse configurations for the stuff it installs, than every app out there writing their own bootstrap shell script. *inaugurate* (possibly in combination with *frecklecute* to support more advanced setup tasks) could be such a thing, but I'd be happy if someone else writes a better alternative. It's more practical to not have to read a whole bash script every time you want to bootstrap a non-trivial-to-install application, is all I'm saying.
+I'd argue it's slightly better to have one generic, widely-used (not that *inaugurate* is widely-used at the moment, mind you) and looked upon script, that uses easy to parse configurations for the stuff it installs, than every app out there writing their own bootstrap shell script. *inaugurate* (possibly in combination with *frecklecute* to support more advanced setup tasks) could be such a thing, but I'd be happy if someone else writes a better alternative. It's more practical to not have to read a whole bash script every time you want to bootstrap a non-trivial-to-install application, is all I'm saying.
 
-Your own, custom *inaugurate* script
-------------------------------------
+Create your own, custom *inaugurate* script
+-------------------------------------------
 
-It's as easy as I could possibly make it to adapt the *inaugurate* shell script for your own application.
+It's as easy as I could possibly make it to adapt the *inaugurate* shell script for your own application. In order to do this, you need to modify the beginning of the *inaugurate* script and include the appropriate variable declarations.
 
 Set your own application details
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+If you want to adapt *inaugurate* for your own application, you can do that by adding the following variables to *inaugurate* (read the comments in the file to find the best place for them):
+
+.. code-block: shell
+
+    DEFAULT_PROFILE="freckles"
+    # conda
+    DEFAULT_PROFILE_CONDA_PYTHON_VERSION="2.7"
+    DEFAULT_PROFILE_CONDA_DEPENDENCIES="pip cryptography pycrypto git virtualenv"
+    DEFAULT_PROFILE_EXECUTABLES_TO_LINK="freckles frecklecute freckelize freckfreckfreck frankentree inaugurate frocker"
+    DEFAULT_PROFILE_EXTRA_EXECUTABLES="nsbl nsbl-tasks nsbl-playbook ansible ansible-playbook ansible-galaxy git"
+    # deb
+    DEFAULT_PROFILE_DEB_DEPENDENCIES="curl build-essential git python-dev python-pip python-virtualenv virtualenv libssl-dev libffi-dev"
+    # rpm
+    DEFAULT_PROFILE_RPM_DEPENDENCIES="wget git python-pip python-virtualenv openssl-devel gcc libffi-devel python-devel"
+    # pip requirements
+    DEFAULT_PROFILE_PIP_DEPENDENCIES="freckles"
+    DEFAULT_PROFILE_ENV_NAME="freckles"
+
+The most important thing to do is to have a ``DEFAULT_PROFILE`` variable set to the name of your package or executable. This indicates to *inaugurate* that a custom application profile is set. If the executable name that is used by the user in the *inaugurate* command-line can be found in the ``DEFAULT_PROFILE_EXECUTABLES_TO_LINK`` variable value, it'll use the custom profile. If not, it'll try the local and remote app-stores as described above.
+The meaning of the other vars is the same as is described in `apps descriptions`_ (with a prepended ``DEFAULT_PROFILE``).
+
+
 Hardcode flags/config options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you want to prevent the user to change or set one of the available `environment variables`_, you can override those like so:
+
+.. code-block::
+
+    NO_EXEC=true
+
+Simple, nothing more to it.
+
 
 Change default behaviour
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-Use *luci* to create a option-url tree
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+If you want to change the *inaugurate* defaults for one or some of the available `environment variables`_, add code like this:
 
-TBD
+.. code-block::
+
+    if [ -z "$NO_EXEC" ]; then
+       NO_EXEC=true
+    fi
+
+
+Use `luci <https://github.com/makkus/luci>`_ to create a option-url tree
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This is not ready yet, will update details once it is.
+
 
 Supported platforms
 -------------------
