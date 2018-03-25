@@ -1,6 +1,12 @@
 History
 =======
 
+2.1
+---
+
+* if NO_EXEC as well as a DEFAULT_PROFILE is set, no executable needs to be provided
+* detecting whether script is run via piping to bash, or directly, or sourced
+
 2.0 (2018-03-24)
 ----------------
 
