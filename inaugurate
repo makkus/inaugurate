@@ -73,7 +73,7 @@
 # Exit codes:
 # 2: application configuration error
 # 3: execution error somewhere in the bootstrap pipeline
-# 4: no matching profile/application found for provided executable
+# 4: no matching profile/application found for provided executable or no executable provided (and NO_EXEC not set to 'true')
 # 6: platform or package manager not supported
 # 7: script run with wrong permissions
 
@@ -221,7 +221,7 @@ function init_vars
     if [ ! -z "$1" ]; then
         PROFILE_NAME=`basename "$1"`
     else
-        PROFILE_NAME="inaugurate"
+        PROFILE_NAME="__INAUGURATE_PROFILE_NOT_SET__"
     fi
 
     log "INAUGURATE_USER: $INAUGURATE_USER"
@@ -890,10 +890,27 @@ function main
         fi
     fi
 
+    if [ "$PROFILE_NAME" == "__INAUGURATE_PROFILE_NOT_SET__" ]; then
+        if [ "$NO_EXEC" = true ]; then
+            if [ -z "$DEFAULT_PROFILE" ]; then
+                error_output "No executable provided and no default profile set in this script. Exiting..."
+                exit 4
+            else
+                log "No executable provided and NO_EXEC set to truth. Using 'DEFAULT_PROFILE'."
+                PROFILE_NAME="$DEFAULT_PROFILE"
+            fi
+        else
+            error_output "No executable provided, and 'NO_EXEC' environment variable not set to 'true'. Exiting..."
+            exit 4
+        fi
+
+    fi
+
     # check if command is already in the path, if it is, assume everything is bootstrapped
     EXECUTABLE_NAME="$PROFILE_NAME"
 
     if ! command_exists_only_user_visible $EXECUTABLE_NAME; then
+
 
         output ""
         output "'$EXECUTABLE_NAME' not found in path, inaugurating..."
@@ -1013,5 +1030,11 @@ function main
 # ============================
 
 if [ "$BASH_SOURCE" == "$0" ]; then
+    # run directly
+    main ${@}
+elif [ "$BASH_SOURCE" == "" ]; then
+    # piped in
     main ${@}
 fi
+
+exit 0
