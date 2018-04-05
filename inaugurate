@@ -38,7 +38,7 @@
 # FORCE_CONDA=false     # if set to true, conda will be used even when run as 'root' or using 'sudo'
 # FORCE_SUDO=false      # if set to true, inaugurate will not run if started without sudo
 # FORCE_NON_SUDO=false  # if set to true, inaugurate will not run if started with sudo
-# SELF_DESTRUCT=self    # if set to true, after the 'inaugurated' application is run, the folder(s)
+# SELF_DESTRUCT=false   # if set to true, after the 'inaugurated' application is run, the folder(s)
 #                       # used in the installation process are deleted again. the system packages
 #                       # used in that process (if using elevated permissions) as well as everything
 #                       # installed in the run will still be present
@@ -330,7 +330,7 @@ function config_get() {
 
     local_app="$INAUGURATE_LOCAL_STORE/$1"
 
-    if [ -e "$1" ]; then
+    if [ -f "$1" ]; then
         app_name=$(basename "$1")
         CONFIG=$(cat "$1")
 
@@ -340,7 +340,7 @@ function config_get() {
             log "$CONFIG"
             output "  * found local configuration: ${1}"
         fi
-    elif [ -e "$local_app" ]; then
+    elif [ -f "$local_app" ]; then
       CONFIG=$(cat $local_app)
 
       log "try local app store file config: ${local_app}"
@@ -725,7 +725,7 @@ function install_inaugurate_non_root_conda {
 
     if [ ! -e "$CONDA_INAUGURATE_ENV_EXE" ]; then
         output "  * creating '$CONDA_ENV_NAME' conda environment"
-        execute_log "$CONDA_ROOT_EXE" create -y --name "$CONDA_ENV_NAME" "python=$CONDA_PYTHON_VERSION" "Could not create conda environment."
+        execute_log "$CONDA_ROOT_EXE" create -y --name "$CONDA_ENV_NAME" "python=$CONDA_PYTHON_VERSION" "Could not create conda environment"
     else
         output "  - '$CONDA_ENV_NAME' conda environment already exists, not creating again"
     fi
